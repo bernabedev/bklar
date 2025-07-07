@@ -3,35 +3,35 @@ import type { Context } from "./context";
 
 export type AnyZodObject = z.ZodObject<any, any, any, any, any>;
 
-export interface RouteSchemas {
+export interface Schemas {
   query?: AnyZodObject;
   params?: AnyZodObject;
   body?: AnyZodObject;
 }
 
-export type InferContext<S extends RouteSchemas> = Context<{
+export type InferContext<S extends Schemas> = Context<{
   query: S["query"] extends AnyZodObject ? z.infer<S["query"]> : never;
   params: S["params"] extends AnyZodObject ? z.infer<S["params"]> : never;
   body: S["body"] extends AnyZodObject ? z.infer<S["body"]> : never;
 }>;
 
-export type Handler<S extends RouteSchemas = {}> = (
+export type Handler<S extends Schemas = {}> = (
   ctx: InferContext<S>
 ) => Response | Promise<Response>;
 
-export type Middleware<S extends RouteSchemas = {}> = (
+export type Middleware<S extends Schemas = {}> = (
   ctx: InferContext<S>
 ) => void | Promise<void>;
 
-export interface RouteOptions<S extends RouteSchemas> {
+export interface RouteOptions<S extends Schemas> {
   schemas?: S;
   middlewares?: Middleware<S>[];
-  handler: Handler<S>;
 }
 
-export interface Route<S extends RouteSchemas> {
+export interface Route<S extends Schemas> {
   method: string;
   segments: string[];
+  handler: Handler<S>;
   options: RouteOptions<S>;
 }
 

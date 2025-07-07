@@ -1,53 +1,35 @@
-import { createApp, Middleware } from "@framework/core";
+import { createApp } from "@framework/core";
 import { z } from "zod";
 
 const app = createApp();
 
-app.get("/", (ctx) => {
-  return ctx.json({ message: "Hello, World!" });
+// --- CASE 1: Simple, handler only ---
+app.get("/health", (ctx) => {
+  return ctx.json({ status: "ok" });
 });
 
-app.get("/users", (ctx) => {
-  return ctx.json({ users: [] });
-});
+// --- CASE 2: Handler + Middlewares + Validation ---
+const paramsSchema = z.object({ id: z.string().uuid() });
+const bodySchema = z.object({ name: z.string() });
 
-app.get("/users/:id", {
-  schemas: {
-    params: z.object({
-      id: z.string(),
-    }),
+app.put(
+  "/users/:id",
+  // 1. Handler (with inferred types)
+  (ctx) => {
+    // ctx.params.id is a string validated as a UUID
+    // ctx.body.name is a validated string
+    // ctx.state.user was added by authMiddleware
+    console.log(`Updating user ${ctx.params.id}`);
+    return ctx.json({ ...ctx.body, id: ctx.params.id });
   },
-  handler: (ctx) => {
-    return ctx.json({ user: ctx.params.id });
-  },
-});
-
-const userSchema = z.object({
-  name: z.string().min(3),
-  email: z.string().email(),
-});
-
-app.post("/users", {
-  schemas: {
-    body: userSchema,
-  },
-  handler: (ctx) => {
-    const newUser = ctx.body;
-    console.log("Creating user:", newUser.name, newUser.email);
-    return ctx.json({ id: 1, ...newUser }, 201);
-  },
-});
-
-const authMiddleware: Middleware = (ctx) => {
-  const authHeader = ctx.req.headers.get("Authorization");
-  if (authHeader !== "Bearer my-secret-token") {
-    throw new Error("Unauthorized");
+  // 2. Options (middlewares and schemas)
+  {
+    // middlewares: [authMiddleware],
+    schemas: {
+      params: paramsSchema,
+      body: bodySchema,
+    },
   }
-  ctx.state.user = { id: 123, role: "admin" };
-};
-
-app.get("/profile", [authMiddleware], (ctx) => {
-  return ctx.json({ user: ctx.state.user });
-});
+);
 
 app.listen(4000);
