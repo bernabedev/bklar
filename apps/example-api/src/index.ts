@@ -14,15 +14,15 @@ const paramsSchema = z.object({ id: z.string().uuid() });
 const bodySchema = z.object({ name: z.string() });
 
 const USERS = [
-  { id: "1", name: "John Doe" },
-  { id: "2", name: "Jane Doe" },
+  { id: 1, name: "John Doe" },
+  { id: 2, name: "Jane Doe" },
 ];
 
 const UserService = {
   getAll: () => {
     return USERS;
   },
-  find: (id: string) => {
+  find: (id: number) => {
     const user = USERS.find((user) => user.id === id);
     if (!user) throw new NotFoundError("User not found");
     return user;
@@ -45,10 +45,19 @@ app.get(
   }
 );
 
-app.get("/users/:id", (ctx) => {
-  const user = UserService.find(ctx.params.id);
-  return ctx.json(user);
-});
+app.get(
+  "/users/:id",
+  (ctx) => {
+    console.log({ id: ctx.params.id });
+    const user = UserService.find(ctx.params.id);
+    return ctx.json(user);
+  },
+  {
+    schemas: {
+      params: z.object({ id: z.coerce.number() }),
+    },
+  }
+);
 
 app.put(
   "/users/:id",
