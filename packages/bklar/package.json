@@ -1,6 +1,6 @@
 {
   "name": "bklar",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A simple, fast, and modern web framework for Bun.",
   "keywords": [
     "bun",
