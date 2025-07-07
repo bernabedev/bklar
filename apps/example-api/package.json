@@ -1,0 +1,11 @@
+{
+  "name": "mi-api",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "bun --watch src/index.ts"
+  },
+  "dependencies": {
+    "@framework/core": "workspace:*",
+    "zod": "^3.25.75"
+  }
+}
