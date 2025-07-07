@@ -1,11 +1,3 @@
-¡Absolutamente! Actualizar el `README` para reflejar el nuevo y más sencillo proceso de inicio es fundamental. Un flujo de "Getting Started" claro y directo es lo más importante para atraer a nuevos usuarios.
-
-He reestructurado la sección de inicio para que el comando `bun create bklar` sea lo primero que vea un desarrollador. Esto elimina la confusión y los guía por el camino recomendado.
-
-Aquí tienes el `README.md` actualizado en inglés.
-
----
-
 # bklar 🐰
 
 [![NPM Version](https://img.shields.io/npm/v/bklar.svg)](https://www.npmjs.com/package/bklar)
