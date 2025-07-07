@@ -1,4 +1,4 @@
-import { Bklar } from "@bklar/core";
+import { Bklar } from "bklar";
 import { z } from "zod";
 
 const app = Bklar();

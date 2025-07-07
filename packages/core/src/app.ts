@@ -2,7 +2,7 @@ import { type Server } from "bun";
 import { Router } from "./router";
 import type { Handler, Middleware, RouteOptions, Schemas } from "./types";
 
-export class App {
+export class BklarApp {
   public readonly router: Router;
 
   constructor() {
@@ -88,5 +88,5 @@ export class App {
 }
 
 export function Bklar() {
-  return new App();
+  return new BklarApp();
 }
