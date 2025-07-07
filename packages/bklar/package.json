@@ -1,0 +1,53 @@
+{
+  "name": "bklar",
+  "version": "0.1.0",
+  "description": "A simple, fast, and modern web framework for Bun.",
+  "keywords": [
+    "bun",
+    "framework",
+    "web",
+    "api",
+    "rest",
+    "fast",
+    "typescript"
+  ],
+  "author": "Tu Nombre <tu.email@example.com> (https://tu-sitio-web.com)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bernabedev/bklar.git",
+    "directory": "packages/bklar"
+  },
+  "homepage": "https://github.com/bernabedev/bklar/tree/main/packages/bklar#readme",
+  "bugs": {
+    "url": "https://github.com/bernabedev/bklar/issues"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "bunchee",
+    "prepublishOnly": "bun run build",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "bunchee": "^4.0.0",
+    "typescript": "^5.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
