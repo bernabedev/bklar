@@ -1,7 +1,7 @@
-import { createApp } from "@bklar/core";
+import { Bklar } from "@bklar/core";
 import { z } from "zod";
 
-const app = createApp();
+const app = Bklar();
 
 // --- CASE 1: Simple, handler only ---
 app.get("/health", (ctx) => {

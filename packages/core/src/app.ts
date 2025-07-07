@@ -87,6 +87,6 @@ export class App {
   }
 }
 
-export function createApp() {
+export function Bklar() {
   return new App();
 }

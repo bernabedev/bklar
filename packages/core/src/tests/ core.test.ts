@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import { z } from "zod";
 import type { App } from "../app";
-import { createApp } from "../app";
+import { Bklar } from "../app";
 import type { Middleware } from "../types";
 
 let app: App;
 
 beforeEach(() => {
-  app = createApp();
+  app = Bklar();
 });
 
 describe("Core Framework Tests", () => {
