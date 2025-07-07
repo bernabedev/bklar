@@ -48,6 +48,7 @@ export type Logger = (
   status: number,
   ip?: string
 ) => void;
+
 export interface BklarOptions {
   logger?: boolean | Logger;
 }

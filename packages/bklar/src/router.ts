@@ -1,4 +1,5 @@
 import { Context } from "./context";
+import { ErrorHandler, ErrorType, HttpError } from "./errors";
 import type {
   Handler,
   Middleware,
@@ -161,16 +162,14 @@ export class Router {
         return await route.handler(ctx);
       } catch (error) {
         if (error instanceof ValidationError) {
-          return ctx.json(
-            { message: "Validation Error", errors: error.details },
-            400
+          const validationError = new HttpError(
+            ErrorType.VALIDATION,
+            "Validation failed",
+            error.details
           );
+          return ErrorHandler.handle(validationError);
         }
-        if (error instanceof Response) {
-          return error;
-        }
-        console.error("Unhandled Error:", error);
-        return ctx.json({ message: "Internal Server Error" }, 500);
+        return ErrorHandler.handle(error);
       }
     }
 
