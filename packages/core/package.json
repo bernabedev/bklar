@@ -4,5 +4,8 @@
   "main": "src/index.ts",
   "dependencies": {
     "zod": "^3.25.75"
+  },
+  "scripts": {
+    "test": "bun test"
   }
 }
