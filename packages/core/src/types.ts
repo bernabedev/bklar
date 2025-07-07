@@ -41,3 +41,13 @@ export class ValidationError extends Error {
     this.name = "ValidationError";
   }
 }
+
+export type Logger = (
+  req: Request,
+  time: number,
+  status: number,
+  ip?: string
+) => void;
+export interface BklarOptions {
+  logger?: boolean | Logger;
+}

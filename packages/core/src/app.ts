@@ -1,12 +1,24 @@
 import { type Server } from "bun";
 import { Router } from "./router";
-import type { Handler, Middleware, RouteOptions, Schemas } from "./types";
+import type {
+  BklarOptions,
+  Handler,
+  Middleware,
+  RouteOptions,
+  Schemas,
+} from "./types";
+import { defaultLogger } from "./utils/logger";
 
 export class BklarApp {
   public readonly router: Router;
+  public readonly options: BklarOptions;
 
-  constructor() {
+  constructor(options: BklarOptions = {}) {
     this.router = new Router();
+    this.options = {
+      logger: options.logger ?? true,
+      ...options,
+    };
   }
 
   use(middleware: Middleware) {
@@ -69,9 +81,30 @@ export class BklarApp {
   }
 
   listen(port: number | string, callback?: (server: Server) => void): Server {
+    const loggingEnabled = this.options.logger !== false;
+
+    const logger =
+      typeof this.options.logger === "function"
+        ? this.options.logger
+        : defaultLogger;
     const server = Bun.serve({
       port: Number(port),
-      fetch: (req) => this.router.handle(req),
+      fetch: async (req, server) => {
+        const start = performance.now();
+
+        const res = await this.router.handle(req);
+
+        if (loggingEnabled) {
+          const duration = performance.now() - start;
+          const ip =
+            req.headers.get("x-forwarded-for")?.split(",")[0] ||
+            server.requestIP(req)?.address;
+
+          logger(req, duration, res.status, ip);
+        }
+
+        return res;
+      },
       error: (error) => {
         console.error("🔥 Uncaught Framework Error:", error);
         return new Response("Internal Server Error", { status: 500 });
@@ -87,6 +120,6 @@ export class BklarApp {
   }
 }
 
-export function Bklar() {
-  return new BklarApp();
+export function Bklar(options?: BklarOptions) {
+  return new BklarApp(options);
 }

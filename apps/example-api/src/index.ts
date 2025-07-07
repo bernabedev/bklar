@@ -1,6 +1,7 @@
 import { Bklar } from "bklar";
 import { z } from "zod";
 
+// { logger: false } // Deshabilita el logging
 const app = Bklar();
 
 // --- CASE 1: Simple, handler only ---
