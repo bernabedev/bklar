@@ -123,3 +123,15 @@ export class TooManyRequestsError extends HttpError {
     super(ErrorType.TOO_MANY_REQUESTS, message);
   }
 }
+
+export class GoneError extends HttpError {
+  constructor(message?: string) {
+    super(ErrorType.GONE, message);
+  }
+}
+
+export class InternalServerError extends HttpError {
+  constructor(message?: string) {
+    super(ErrorType.INTERNAL_SERVER, message);
+  }
+}
