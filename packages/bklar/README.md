@@ -162,6 +162,88 @@ app.group(
 );
 ```
 
+### 🛡️ Error Handling
+
+bklar comes with a powerful and semantic error handling system out of the box. Simply `throw` one of the built-in error classes from your handler, and bklar will automatically catch it and send a properly formatted JSON response with the correct HTTP status code.
+
+```typescript
+import { Bklar } from "bklar";
+import { NotFoundError } from "bklar/errors"; // Import error classes
+
+const app = Bklar();
+
+app.get("/users/:id", (ctx) => {
+  // Pretend to look for a user
+  const user = findUserById(ctx.params.id);
+
+  if (!user) {
+    // This will be caught and transformed into a 404 response
+    throw new NotFoundError("A user with that ID could not be found.");
+  }
+
+  return ctx.json(user);
+});
+```
+
+#### Available Error Classes
+
+You can import any of the following error classes from `"bklar/errors"`:
+
+- `BadRequestError(message?)` - `400 Bad Request`
+- `UnauthorizedError(message?)` - `401 Unauthorized`
+- `ForbiddenError(message?)` - `403 Forbidden`
+- `NotFoundError(message?)` - `404 Not Found`
+- `ConflictError(message?)` - `409 Conflict`
+- `TooManyRequestsError(message?)` - `429 Too Many Requests`
+
+#### Custom Error Handling
+
+For more advanced use cases, like handling specific database errors or logging to an external service, you can provide a custom error handler.
+
+First, create your handler. It should import `HttpError` from `bklar/errors` and handle any custom logic.
+
+**`src/lib/errorHandler.ts`**
+
+```typescript
+import { HttpError } from "bklar/errors";
+import { Prisma } from "@prisma/client";
+
+export class MyErrorHandler {
+  static handle(error: unknown): Response {
+    // Handle specific, known errors first
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      console.error("Database Error:", error.message);
+      return new HttpError(
+        "BAD_REQUEST",
+        "A database operation failed."
+      ).toResponse();
+    }
+
+    // Fall back to bklar's HttpError handling
+    if (error instanceof HttpError) {
+      return error.toResponse();
+    }
+
+    // Handle any other unknown error
+    console.error("Unhandled Application Error:", error);
+    return new HttpError("INTERNAL_SERVER").toResponse();
+  }
+}
+```
+
+Then, pass it to the `Bklar` instance during initialization:
+
+**`src/index.ts`**
+
+```typescript
+import { Bklar } from "bklar";
+import { MyErrorHandler } from "./lib/errorHandler";
+
+const app = Bklar({
+  errorHandler: MyErrorHandler.handle,
+});
+```
+
 ## ⚙️ Configuration
 
 You can customize bklar's behavior when initializing the application.

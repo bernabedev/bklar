@@ -48,7 +48,6 @@ app.get(
 app.get(
   "/users/:id",
   (ctx) => {
-    console.log({ id: ctx.params.id });
     const user = UserService.find(ctx.params.id);
     return ctx.json(user);
   },
