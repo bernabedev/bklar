@@ -1,5 +1,5 @@
 {
-  "name": "bun-framework",
+  "name": "bklar",
   "module": "index.ts",
   "type": "module",
   "private": true,

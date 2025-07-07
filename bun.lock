@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "bun-framework",
+      "name": "blitzar",
       "devDependencies": {
         "@types/bun": "latest",
       },
@@ -14,12 +14,12 @@
       "name": "mi-api",
       "version": "1.0.0",
       "dependencies": {
-        "@framework/core": "workspace:*",
+        "@bklar/core": "workspace:*",
         "zod": "^3.25.75",
       },
     },
     "packages/core": {
-      "name": "@framework/core",
+      "name": "@bklar/core",
       "version": "0.1.0",
       "dependencies": {
         "zod": "^3.25.75",
@@ -27,7 +27,7 @@
     },
   },
   "packages": {
-    "@framework/core": ["@framework/core@workspace:packages/core"],
+    "@bklar/core": ["@bklar/core@workspace:packages/core"],
 
     "@types/bun": ["@types/bun@1.2.18", "", { "dependencies": { "bun-types": "1.2.18" } }, "sha512-Xf6RaWVheyemaThV0kUfaAUvCNokFr+bH8Jxp+tTZfx7dAPA8z9ePnP9S9+Vspzuxxx9JRAXhnyccRj3GyCMdQ=="],
 

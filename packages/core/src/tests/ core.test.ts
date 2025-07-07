@@ -65,12 +65,12 @@ describe("Core Framework Tests", () => {
         },
       });
 
-      const req = new Request("http://localhost/search?q=bun-framework");
+      const req = new Request("http://localhost/search?q=bklar");
       const res = await app.router.handle(req);
       const body = await res.json();
 
       expect(res.status).toBe(200);
-      expect(body.query.q).toBe("bun-framework");
+      expect(body.query.q).toBe("bklar");
     });
 
     it("should return 400 on failed query parameter validation", async () => {

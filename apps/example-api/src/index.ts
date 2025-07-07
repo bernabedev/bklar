@@ -1,4 +1,4 @@
-import { createApp } from "@framework/core";
+import { createApp } from "@bklar/core";
 import { z } from "zod";
 
 const app = createApp();
