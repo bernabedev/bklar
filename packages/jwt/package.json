@@ -1,0 +1,31 @@
+{
+  "name": "@bklar/jwt",
+  "version": "0.1.0",
+  "description": "JWT middleware for bklar framework",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "bunchee",
+    "test": "bun test"
+  },
+  "keywords": [
+    "bklar",
+    "jwt",
+    "auth",
+    "middleware"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "bklar": "workspace:*",
+    "jose": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "bunchee": "latest",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "bklar": "workspace:*"
+  }
+}

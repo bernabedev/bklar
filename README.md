@@ -261,7 +261,7 @@ const app = Bklar({
 
 ## 🌳 Ecosystem
 
-- **[@bklar/jwt](https://npmjs.com/package/@bklar/jwt):** Middleware for JSON Web Token authentication. (Create this package!)
+- **[@bklar/jwt](https://npmjs.com/package/@bklar/jwt):** Middleware for JSON Web Token authentication.
 
 ## 🤝 Contributing
 
