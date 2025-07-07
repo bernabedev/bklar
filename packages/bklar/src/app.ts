@@ -14,11 +14,11 @@ export class BklarApp {
   public readonly options: BklarOptions;
 
   constructor(options: BklarOptions = {}) {
-    this.router = new Router();
     this.options = {
       logger: options.logger ?? true,
       ...options,
     };
+    this.router = new Router({ errorHandler: this.options.errorHandler });
   }
 
   use(middleware: Middleware) {

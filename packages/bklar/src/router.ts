@@ -1,6 +1,7 @@
 import { Context } from "./context";
-import { ErrorHandler, ErrorType, HttpError } from "./errors";
+import { defaultErrorHandler, ErrorType, HttpError } from "./errors";
 import type {
+  ErrorHandler,
   Handler,
   Middleware,
   Route,
@@ -12,6 +13,11 @@ import { ValidationError } from "./types";
 export class Router {
   private routes: Route<any>[] = [];
   private globalMiddlewares: Middleware[] = [];
+  private readonly errorHandler: ErrorHandler;
+
+  constructor(options: { errorHandler?: ErrorHandler } = {}) {
+    this.errorHandler = options.errorHandler || defaultErrorHandler;
+  }
 
   use(middleware: Middleware) {
     this.globalMiddlewares.push(middleware);
@@ -167,9 +173,9 @@ export class Router {
             "Validation failed",
             error.details
           );
-          return ErrorHandler.handle(validationError);
+          return this.errorHandler(validationError);
         }
-        return ErrorHandler.handle(error);
+        return this.errorHandler(error);
       }
     }
 

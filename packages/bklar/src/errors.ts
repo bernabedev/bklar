@@ -72,25 +72,20 @@ export class HttpError extends Error {
   }
 }
 
-export class ErrorHandler {
-  static handle(error: unknown): Response {
-    if (error instanceof HttpError) {
-      return error.toResponse();
-    }
-
-    if (error instanceof ZodError) {
-      return new HttpError(
-        ErrorType.VALIDATION,
-        "Validation failed",
-        error.flatten().fieldErrors
-      ).toResponse();
-    }
-
-    // Log any unhandled error for observability
-    console.error("Unhandled Application Error:", error);
-
-    return new HttpError(ErrorType.INTERNAL_SERVER).toResponse();
+export function defaultErrorHandler(error: unknown): Response {
+  if (error instanceof HttpError) {
+    return error.toResponse();
   }
+
+  if (error instanceof ZodError) {
+    return new HttpError(
+      ErrorType.VALIDATION,
+      "Validation failed",
+      error.flatten().fieldErrors
+    ).toResponse();
+  }
+
+  return new HttpError(ErrorType.INTERNAL_SERVER).toResponse();
 }
 
 export class NotFoundError extends HttpError {
