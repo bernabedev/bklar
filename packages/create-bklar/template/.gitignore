@@ -1,0 +1,10 @@
+# Dependencies
+node_modules
+bun.lockb
+
+# Environment
+.env
+.env.local
+
+# Build
+dist

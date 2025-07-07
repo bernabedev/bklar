@@ -1,0 +1,14 @@
+{
+  "name": "my-bklar-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "bun --watch index.ts"
+  },
+  "dependencies": {
+    "bklar": "latest"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

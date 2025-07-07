@@ -1,0 +1,19 @@
+{
+  "name": "create-bklar",
+  "version": "0.1.0",
+  "description": "The official scaffolding tool for bklar framework.",
+  "bin": {
+    "create-bklar": "index.ts"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/prompts": "^2.4.9"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
