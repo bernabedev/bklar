@@ -1,3 +1,11 @@
+¡Absolutamente! Actualizar el `README` para reflejar el nuevo y más sencillo proceso de inicio es fundamental. Un flujo de "Getting Started" claro y directo es lo más importante para atraer a nuevos usuarios.
+
+He reestructurado la sección de inicio para que el comando `bun create bklar` sea lo primero que vea un desarrollador. Esto elimina la confusión y los guía por el camino recomendado.
+
+Aquí tienes el `README.md` actualizado en inglés.
+
+---
+
 # bklar 🐰
 
 [![NPM Version](https://img.shields.io/npm/v/bklar.svg)](https://www.npmjs.com/package/bklar)
@@ -12,7 +20,7 @@ Inspired by simplicity, bklar integrates validation with [Zod](https://zod.dev/)
 
 ## ✨ Key Features
 
-- 🚀 **Incredibly Fast:** Built on top of Bun, one of the fastest JavaScript runtimes.
+- 🚀 **Incredibly Fast:** Built on top of Bun, one of ahe fastest JavaScript runtimes.
 - 🔒 **Integrated Validation:** Define schemas for `body`, `query`, and `params` using Zod. Types are automatically inferred in your handlers.
 - 🎨 **Clear & Expressive Syntax:** A fluent and easy-to-learn API that you'll love to use.
 - 🧩 **Middlewares & Groups:** Logically organize your code with middlewares at the global, group, or route level.
@@ -20,17 +28,29 @@ Inspired by simplicity, bklar integrates validation with [Zod](https://zod.dev/)
 - 📦 **Extensible Ecosystem:** Designed to be extended with packages like `@bklar/jwt`.
 - 🛡️ **End-to-End Type-Safety:** Leverage the full power of TypeScript without complex configurations.
 
-## 📦 Installation
+## 🚀 Getting Started
 
-To get started, you just need to have Bun installed.
+Creating a new bklar project is simple with the official command-line tool. You just need to have Bun installed.
 
 ```bash
-bun add bklar
+bun create bklar my-app
 ```
 
-## 🚀 Quick Start
+This command will create a new directory called `my-app`, scaffold a new project with all the necessary files, and provide you with the next steps.
 
-Creating a server with bklar is as simple as this. In an `index.ts` file:
+Once it's done, navigate to your new project and start the development server:
+
+```bash
+cd my-app
+bun install
+bun run dev
+```
+
+Your new application is now running at `http://localhost:3000`!
+
+## ✨ A Look Inside
+
+The `bun create` command generates a simple, well-structured project for you. Here's a look at the core concepts in your `index.ts` file:
 
 ```typescript
 import { Bklar } from "bklar";
@@ -51,14 +71,6 @@ app.get("/hello/:name", (ctx) => {
 // 3. Start the server
 app.listen(3000);
 ```
-
-Now, run your application:
-
-```bash
-bun run index.ts
-```
-
-Your server is now running at `http://localhost:3000`!
 
 ## 深入 Guide
 
