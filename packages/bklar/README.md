@@ -194,7 +194,9 @@ You can import any of the following error classes from `"bklar/errors"`:
 - `ForbiddenError(message?)` - `403 Forbidden`
 - `NotFoundError(message?)` - `404 Not Found`
 - `ConflictError(message?)` - `409 Conflict`
+- `GoneError(message?)` - `410 Gone`
 - `TooManyRequestsError(message?)` - `429 Too Many Requests`
+- `InternalServerError(message?)` - `500 Internal Server Error`
 
 #### Custom Error Handling
 
