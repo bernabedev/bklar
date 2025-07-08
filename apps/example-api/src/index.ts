@@ -5,7 +5,7 @@ import { NotFoundError, UnauthorizedError } from "bklar/errors";
 import { z } from "zod";
 
 const app = Bklar();
-app.use(cors());
+app.use(cors({ origin: true }));
 const JWT_SECRET = "a-super-secret-key-that-should-be-in-an-env";
 
 // --- Mock Database and User Service ---
