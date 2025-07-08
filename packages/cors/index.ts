@@ -39,6 +39,15 @@ export interface CorsOptions {
   maxAge?: number;
 }
 
+declare module "bklar" {
+  interface Context<T> {
+    state: {
+      corsHeaders?: Headers;
+      [key: string]: any;
+    };
+  }
+}
+
 const toArray = (value?: string | string[]) =>
   Array.isArray(value) ? value : value?.split(",").map((s) => s.trim()) || [];
 
@@ -68,54 +77,50 @@ export function cors(options: CorsOptions = {}): Middleware {
     return false;
   };
 
-  return async (ctx) => {
+  const corsMiddleware: Middleware = (ctx) => {
     const requestOrigin = ctx.req.headers.get("Origin");
 
     if (!requestOrigin) {
       return;
     }
 
-    const headers = new Headers();
-    let isAllowed = false;
+    const corsHeaders = new Headers();
+    corsHeaders.append("Vary", "Origin");
 
-    if (isOriginAllowed(requestOrigin)) {
-      isAllowed = true;
-      headers.set("Access-Control-Allow-Origin", requestOrigin);
-      if (config.credentials) {
-        headers.set("Access-Control-Allow-Credentials", "true");
-      }
+    if (!isOriginAllowed(requestOrigin)) {
+      return;
     }
 
-    headers.append("Vary", "Origin");
+    corsHeaders.set("Access-Control-Allow-Origin", requestOrigin);
+    if (config.credentials) {
+      corsHeaders.set("Access-Control-Allow-Credentials", "true");
+    }
 
     if (ctx.req.method === "OPTIONS") {
-      if (!isAllowed) {
-        return new Response(null, { status: 204 });
-      }
+      corsHeaders.set("Access-Control-Allow-Methods", config.methods);
 
-      headers.set("Access-Control-Allow-Methods", config.methods);
+      if (config.maxAge) {
+        corsHeaders.set("Access-Control-Max-Age", config.maxAge.toString());
+      }
 
       const requestedHeaders = ctx.req.headers.get(
         "Access-Control-Request-Headers"
       );
       if (requestedHeaders) {
-        headers.set("Access-Control-Allow-Headers", requestedHeaders);
+        corsHeaders.set("Access-Control-Allow-Headers", requestedHeaders);
       } else if (config.allowedHeaders) {
-        headers.set("Access-Control-Allow-Headers", config.allowedHeaders);
+        corsHeaders.set("Access-Control-Allow-Headers", config.allowedHeaders);
       }
 
-      if (config.maxAge) {
-        headers.set("Access-Control-Max-Age", config.maxAge.toString());
-      }
-
-      return new Response(null, { status: 204, headers });
+      return new Response(null, { status: 204, headers: corsHeaders });
     }
 
-    if (isAllowed) {
-      if (config.exposedHeaders) {
-        headers.set("Access-Control-Expose-Headers", config.exposedHeaders);
-      }
-      ctx.state.corsHeaders = headers;
+    if (config.exposedHeaders) {
+      corsHeaders.set("Access-Control-Expose-Headers", config.exposedHeaders);
     }
+
+    ctx.state.corsHeaders = corsHeaders;
   };
+
+  return corsMiddleware;
 }
