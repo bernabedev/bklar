@@ -1,7 +1,8 @@
 {
   "name": "@bklar/jwt",
   "version": "0.1.2",
-  "description": "JWT authentication middleware for the bklar web framework.",
+  "description": "A JWT-based authentication middleware designed for the Bklar web framework.",
+  "type": "module",
   "keywords": [
     "bklar",
     "bun",
@@ -36,7 +37,7 @@
   "scripts": {
     "build": "bunchee",
     "prepublishOnly": "bun run build",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "bun run test"
   },
   "dependencies": {
     "jose": "^6.0.0"
