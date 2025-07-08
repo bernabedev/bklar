@@ -1,0 +1,52 @@
+{
+  "name": "@bklarjs/rate-limit",
+  "version": "0.1.0",
+  "description": "Rate-limiting middleware for the bklar web framework.",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "keywords": [
+    "bklar",
+    "bun",
+    "rate-limit",
+    "middleware",
+    "security"
+  ],
+  "files": [
+    "dist"
+  ],
+  "author": "Bernabe De Vargas <bernabedev@gmail.com> (https://bernabedev.com)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bernabedev/bklar.git",
+    "directory": "packages/rate-limit"
+  },
+  "homepage": "https://github.com/bernabedev/bklar/tree/main/packages/rate-limit#readme",
+  "bugs": {
+    "url": "https://github.com/bernabedev/bklar/issues"
+  },
+  "scripts": {
+    "build": "bunchee",
+    "prepublishOnly": "bun run build"
+  },
+  "peerDependencies": {
+    "bklar": ">=0.1.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "bklar": "workspace:*",
+    "bunchee": "^4.0.0",
+    "typescript": "^5.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
