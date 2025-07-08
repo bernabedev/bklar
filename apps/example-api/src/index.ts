@@ -1,12 +1,14 @@
 import { cors } from "@bklarjs/cors";
 import { jwt, sign } from "@bklarjs/jwt";
 import { rateLimit } from "@bklarjs/rate-limit";
+import { staticServer } from "@bklarjs/static";
 import { swagger } from "@bklarjs/swagger";
 import { Bklar } from "bklar";
 import { NotFoundError, UnauthorizedError } from "bklar/errors";
 import { z } from "zod";
 
 const app = Bklar();
+app.use(staticServer({ root: "./public" }));
 app.use(cors({ origin: true }));
 app.use(rateLimit({ max: 100 }));
 const JWT_SECRET = "a-super-secret-key-that-should-be-in-an-env";

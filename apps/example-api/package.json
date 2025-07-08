@@ -10,6 +10,7 @@
     "@bklarjs/cors": "workspace:*",
     "@bklarjs/rate-limit": "workspace:*",
     "@bklarjs/swagger": "workspace:*",
+    "@bklarjs/static": "workspace:*",
     "zod": "^3.25.75"
   }
 }
