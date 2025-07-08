@@ -16,13 +16,11 @@ async function main() {
 
   if (projectDir) {
     // --- NON-INTERACTIVE MODE ---
-    // A project name was provided as an argument.
     console.log(`Project name provided: ${chalk.yellow(projectDir)}.`);
     console.log("Using 'Minimal' template by default.");
     projectType = "minimal";
   } else {
     // --- INTERACTIVE MODE ---
-    // No project name was provided, so we launch the wizard.
     const initialSetup = await prompts([
       {
         type: "text",
@@ -80,7 +78,6 @@ async function main() {
       });
       selectedPlugins = customSetup.plugins || [];
     }
-    // For 'minimal', selectedPlugins remains an empty array.
   }
 
   if (!projectDir) {
@@ -103,16 +100,22 @@ async function main() {
     // This is the expected outcome, as the directory should not exist.
   }
 
-  // --- Scaffolding Logic ---
+  // --- Scaffolding Logic (CORRECTED ORDER) ---
   const templatePath = path.resolve(import.meta.dir, "template");
   console.log(`\nCreating project in ${chalk.yellow(targetPath)}...`);
 
-  // Copy the template files to the target directory.
+  // ** STEP 1: Copy all template files FIRST. **
+  await fs.cp(templatePath, targetPath, { recursive: true });
+
+  // ** STEP 2: Now that files exist, modify them. **
+
+  // Rename 'gitignore' to '.gitignore'
   const gitignorePath = path.join(targetPath, "gitignore");
   const dotGitignorePath = path.join(targetPath, ".gitignore");
   try {
     await fs.rename(gitignorePath, dotGitignorePath);
   } catch (error) {
+    // This might fail if the template 'gitignore' file doesn't exist, which is fine.
     console.warn(chalk.yellow("Could not create .gitignore file."));
   }
 
