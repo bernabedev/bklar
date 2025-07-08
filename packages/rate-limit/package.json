@@ -1,6 +1,6 @@
 {
   "name": "@bklarjs/rate-limit",
-  "version": "0.1.5",
+  "version": "1.0.0",
   "description": "Rate-limiting middleware for the bklar web framework.",
   "type": "module",
   "main": "dist/index.js",
@@ -38,7 +38,7 @@
     "prepublishOnly": "bun run build"
   },
   "peerDependencies": {
-    "bklar": ">=0.1.0"
+    "bklar": ">=1.0.0"
   },
   "devDependencies": {
     "@types/bun": "latest",

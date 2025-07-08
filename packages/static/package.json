@@ -1,6 +1,6 @@
 {
   "name": "@bklarjs/static",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Static file serving middleware for the bklar web framework.",
   "type": "module",
   "main": "dist/index.js",
@@ -41,7 +41,7 @@
     "test": "bun test"
   },
   "peerDependencies": {
-    "bklar": ">=0.1.0"
+    "bklar": ">=1.0.0"
   },
   "devDependencies": {
     "@types/bun": "latest",

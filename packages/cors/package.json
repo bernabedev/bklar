@@ -1,6 +1,6 @@
 {
   "name": "@bklarjs/cors",
-  "version": "0.1.5",
+  "version": "1.0.0",
   "description": "CORS middleware for the bklar framework.",
   "main": "index.ts",
   "keywords": [
@@ -25,7 +25,7 @@
     "url": "https://github.com/bernabedev/bklar/issues"
   },
   "peerDependencies": {
-    "bklar": ">=0.1.0"
+    "bklar": ">=1.0.0"
   },
   "devDependencies": {
     "bklar": "workspace:*"
