@@ -1,6 +1,6 @@
 {
   "name": "@bklar/jwt",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "JWT authentication middleware for the bklar web framework.",
   "keywords": [
     "bklar",
