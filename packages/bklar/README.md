@@ -193,6 +193,7 @@ You can import any of the following error classes from `"bklar/errors"`:
 - `UnauthorizedError(message?)` - `401 Unauthorized`
 - `ForbiddenError(message?)` - `403 Forbidden`
 - `NotFoundError(message?)` - `404 Not Found`
+- `MethodNotAllowedError(message?)` - `405 Method Not Allowed`
 - `ConflictError(message?)` - `409 Conflict`
 - `GoneError(message?)` - `410 Gone`
 - `TooManyRequestsError(message?)` - `429 Too Many Requests`
