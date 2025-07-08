@@ -262,6 +262,7 @@ const app = Bklar({
 ## 🌳 Ecosystem
 
 - **[@bklarjs/jwt](https://npmjs.com/package/@bklarjs/jwt):** Middleware for JSON Web Token authentication.
+- **[@bklarjs/cors](https://npmjs.com/package/@bklarjs/cors):** Middleware for Cross-Origin Resource Sharing.
 
 ## 🤝 Contributing
 
