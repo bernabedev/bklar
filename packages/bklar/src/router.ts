@@ -1,5 +1,10 @@
 import { Context } from "./context";
-import { defaultErrorHandler, ErrorType, HttpError } from "./errors";
+import {
+  defaultErrorHandler,
+  ErrorType,
+  HttpError,
+  NotFoundError,
+} from "./errors";
 import type {
   ErrorHandler,
   Handler,
@@ -132,9 +137,7 @@ export class Router {
     }
   }
 
-  async handle(
-    req: Request
-  ): Promise<{ response: Response; context: Context<any> | null }> {
+  async handle(req: Request): Promise<Response> {
     const url = new URL(req.url);
     const pathSegments = url.pathname.split("/").filter(Boolean);
 
@@ -158,20 +161,30 @@ export class Router {
       if (!isMatch) continue;
 
       const ctx = new Context(req, params);
+      let response: Response;
+
       try {
         ctx.query = Object.fromEntries(url.searchParams.entries());
+
+        let shortCircuitResponse = await this.executeMiddlewares(
+          ctx,
+          this.globalMiddlewares
+        );
+        if (shortCircuitResponse) return shortCircuitResponse;
+
+        if (route.options.middlewares) {
+          shortCircuitResponse = await this.executeMiddlewares(
+            ctx,
+            route.options.middlewares
+          );
+          if (shortCircuitResponse) return shortCircuitResponse;
+        }
 
         if (route.options.schemas) {
           await this.validate(ctx, route.options.schemas);
         }
 
-        await this.executeMiddlewares(ctx, this.globalMiddlewares);
-        if (route.options.middlewares) {
-          await this.executeMiddlewares(ctx, route.options.middlewares);
-        }
-
-        const response = await route.handler(ctx);
-        return { response, context: ctx };
+        response = await route.handler(ctx);
       } catch (error) {
         if (error instanceof ValidationError) {
           const validationError = new HttpError(
@@ -179,22 +192,22 @@ export class Router {
             "Validation failed",
             error.details
           );
-          return {
-            response: await this.errorHandler(validationError),
-            context: ctx,
-          };
+          response = await this.errorHandler(validationError, ctx);
+        } else {
+          response = await this.errorHandler(error, ctx);
         }
-        return { response: await this.errorHandler(error), context: ctx };
       }
+
+      if (ctx.state.corsHeaders instanceof Headers) {
+        // @ts-expect-error Headers is not iterable
+        for (const [key, value] of ctx.state.corsHeaders.entries()) {
+          response.headers.append(key, value);
+        }
+      }
+
+      return response;
     }
 
-    const notFoundResponse = new Response(
-      JSON.stringify({ message: "Route not found" }),
-      {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-    return { response: notFoundResponse, context: null };
+    return this.errorHandler(new NotFoundError(), new Context(req, {}));
   }
 }

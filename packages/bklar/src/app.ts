@@ -92,15 +92,7 @@ export class BklarApp {
       fetch: async (req, server) => {
         const start = performance.now();
 
-        const { response: res, context } = await this.router.handle(req);
-
-        if (context?.state.corsHeaders) {
-          for (const [key, value] of Object.entries(
-            context.state.corsHeaders as Record<string, string>
-          )) {
-            res.headers.set(key, value);
-          }
-        }
+        const res = await this.router.handle(req);
 
         if (loggingEnabled) {
           const duration = performance.now() - start;

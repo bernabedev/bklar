@@ -49,7 +49,10 @@ export type Logger = (
   ip?: string
 ) => void;
 
-export type ErrorHandler = (error: unknown) => Response | Promise<Response>;
+export type ErrorHandler = (
+  error: unknown,
+  ctx?: Context<any>
+) => Response | Promise<Response>;
 
 export interface BklarOptions {
   logger?: boolean | Logger;
