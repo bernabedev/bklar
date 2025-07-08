@@ -8,6 +8,7 @@
     "bklar": "workspace:*",
     "@bklarjs/jwt": "workspace:*",
     "@bklarjs/cors": "workspace:*",
+    "@bklarjs/rate-limit": "workspace:*",
     "zod": "^3.25.75"
   }
 }
