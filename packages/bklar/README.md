@@ -265,6 +265,7 @@ const app = Bklar({
 - **[@bklarjs/cors](https://npmjs.com/package/@bklarjs/cors):** Middleware for Cross-Origin Resource Sharing.
 - **[@bklarjs/rate-limit](https://npmjs.com/package/@bklarjs/rate-limit):** Middleware for rate limiting.
 - **[@bklarjs/swagger](https://npmjs.com/package/@bklarjs/swagger):** OpenAPI (Swagger) and Scalar documentation generator.
+- **[@bklarjs/static](https://npmjs.com/package/@bklarjs/static):** Static file serving middleware.
 
 ## 🤝 Contributing
 
