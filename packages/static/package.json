@@ -1,0 +1,55 @@
+{
+  "name": "@bklarjs/static",
+  "version": "0.1.0",
+  "description": "Static file serving middleware for the bklar web framework.",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "keywords": [
+    "bklar",
+    "bun",
+    "static",
+    "assets",
+    "files",
+    "server",
+    "middleware"
+  ],
+  "files": [
+    "dist"
+  ],
+  "author": "Freilyn Bernabe <freilyn@bernabe.dev> (https://bernabe.dev)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bernabedev/bklar.git",
+    "directory": "packages/static"
+  },
+  "homepage": "https://github.com/bernabedev/bklar/tree/main/packages/static#readme",
+  "bugs": {
+    "url": "https://github.com/bernabedev/bklar/issues"
+  },
+  "scripts": {
+    "build": "bunchee",
+    "prepublishOnly": "bun run build",
+    "test": "bun test"
+  },
+  "peerDependencies": {
+    "bklar": ">=0.1.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "bklar": "workspace:*",
+    "bunchee": "^4.0.0",
+    "typescript": "^5.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
