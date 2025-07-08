@@ -1,6 +1,6 @@
 {
   "name": "my-bklar-app",
-  "version": "0.1.6",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "bun --watch index.ts",
