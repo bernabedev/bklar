@@ -32,7 +32,7 @@ export class Router {
     method: string,
     pattern: string,
     handler: Handler<S>,
-    options: RouteOptions<S> = {} // options es un objeto opcional
+    options: RouteOptions<S> = {}
   ) {
     const segments = pattern.split("/").filter(Boolean);
     this.routes.push({ method, segments, handler, options });
@@ -137,12 +137,12 @@ export class Router {
     }
   }
 
-  async handle(req: Request): Promise<Response> {
-    const url = new URL(req.url);
+  private async _findAndExecuteRoute(ctx: Context<any>): Promise<Response> {
+    const url = new URL(ctx.req.url);
     const pathSegments = url.pathname.split("/").filter(Boolean);
 
     for (const route of this.routes) {
-      if (route.method !== req.method && route.method !== "*") continue;
+      if (route.method !== ctx.req.method && route.method !== "*") continue;
       if (route.segments.length !== pathSegments.length) continue;
 
       const params: Record<string, string> = {};
@@ -160,62 +160,71 @@ export class Router {
       }
       if (!isMatch) continue;
 
-      const ctx = new Context(req, params);
-      let response: Response;
+      ctx.params = params;
 
-      try {
-        ctx.query = Object.fromEntries(url.searchParams.entries());
-
-        let shortCircuitResponse = await this.executeMiddlewares(
+      if (route.options.middlewares) {
+        const shortCircuitResponse = await this.executeMiddlewares(
           ctx,
-          this.globalMiddlewares
+          route.options.middlewares
         );
         if (shortCircuitResponse) return shortCircuitResponse;
-
-        if (route.options.middlewares) {
-          shortCircuitResponse = await this.executeMiddlewares(
-            ctx,
-            route.options.middlewares
-          );
-          if (shortCircuitResponse) return shortCircuitResponse;
-        }
-
-        if (route.options.schemas) {
-          await this.validate(ctx, route.options.schemas);
-        }
-
-        response = await route.handler(ctx);
-      } catch (error) {
-        if (error instanceof ValidationError) {
-          const validationError = new HttpError(
-            ErrorType.VALIDATION,
-            "Validation failed",
-            error.details
-          );
-          response = await this.errorHandler(validationError, ctx);
-        } else {
-          response = await this.errorHandler(error, ctx);
-        }
       }
 
-      // Apply CORS headers
-      if (ctx.state.corsHeaders instanceof Headers) {
-        // @ts-expect-error Headers is not iterable
-        for (const [key, value] of ctx.state.corsHeaders.entries()) {
-          response.headers.append(key, value);
-        }
+      if (route.options.schemas) {
+        await this.validate(ctx, route.options.schemas);
       }
 
-      // Apply Rate Limit headers
-      if (ctx.state.rateLimitHeaders) {
-        for (const [key, value] of Object.entries(ctx.state.rateLimitHeaders)) {
-          response.headers.set(key, String(value));
-        }
-      }
-
-      return response;
+      return await route.handler(ctx);
     }
 
-    return this.errorHandler(new NotFoundError(), new Context(req, {}));
+    throw new NotFoundError();
+  }
+
+  async handle(req: Request): Promise<Response> {
+    const ctx = new Context(req, {});
+    let response: Response;
+
+    try {
+      ctx.query = Object.fromEntries(new URL(req.url).searchParams.entries());
+
+      const shortCircuitResponse = await this.executeMiddlewares(
+        ctx,
+        this.globalMiddlewares
+      );
+
+      if (shortCircuitResponse) {
+        response = shortCircuitResponse;
+      } else {
+        response = await this._findAndExecuteRoute(ctx);
+      }
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        const validationError = new HttpError(
+          ErrorType.VALIDATION,
+          "Validation failed",
+          error.details
+        );
+        response = await this.errorHandler(validationError, ctx);
+      } else {
+        response = await this.errorHandler(error, ctx);
+      }
+    }
+
+    // Apply CORS headers
+    if (ctx.state.corsHeaders instanceof Headers) {
+      // @ts-expect-error Headers is not iterable
+      for (const [key, value] of ctx.state.corsHeaders.entries()) {
+        response.headers.append(key, value);
+      }
+    }
+
+    // Apply Rate Limit headers
+    if (ctx.state.rateLimitHeaders) {
+      for (const [key, value] of Object.entries(ctx.state.rateLimitHeaders)) {
+        response.headers.set(key, String(value));
+      }
+    }
+
+    return response;
   }
 }
