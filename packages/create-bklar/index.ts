@@ -106,7 +106,15 @@ async function main() {
   // --- Scaffolding Logic ---
   const templatePath = path.resolve(import.meta.dir, "template");
   console.log(`\nCreating project in ${chalk.yellow(targetPath)}...`);
-  await fs.cp(templatePath, targetPath, { recursive: true });
+
+  // Copy the template files to the target directory.
+  const gitignorePath = path.join(targetPath, "gitignore");
+  const dotGitignorePath = path.join(targetPath, ".gitignore");
+  try {
+    await fs.rename(gitignorePath, dotGitignorePath);
+  } catch (error) {
+    console.warn(chalk.yellow("Could not create .gitignore file."));
+  }
 
   // Modify package.json with the project name and selected plugins.
   const packageJsonPath = path.join(targetPath, "package.json");
