@@ -1,9 +1,36 @@
 {
   "name": "create-bklar",
-  "version": "0.1.0",
-  "description": "The official scaffolding tool for bklar framework.",
-  "bin": {
-    "create-bklar": "index.ts"
+  "version": "0.1.5",
+  "description": "The official command-line tool to bootstrap a new bklar web framework project.",
+  "type": "module",
+  "bin": "index.ts",
+  "files": [
+    "index.ts",
+    "template"
+  ],
+  "keywords": [
+    "bklar",
+    "bun",
+    "scaffold",
+    "cli",
+    "create",
+    "starter",
+    "template",
+    "api"
+  ],
+  "author": "Freilyn Bernabe <freilyn@bernabe.dev> (https://bernabe.dev)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bernabedev/bklar.git",
+    "directory": "packages/create-bklar"
+  },
+  "homepage": "https://github.com/bernabedev/bklar/tree/main/packages/create-bklar#readme",
+  "bugs": {
+    "url": "https://github.com/bernabedev/bklar/issues"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
   },
   "dependencies": {
     "chalk": "^5.3.0",
