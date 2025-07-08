@@ -5,6 +5,7 @@ export enum ErrorType {
   UNAUTHORIZED = "UNAUTHORIZED",
   FORBIDDEN = "FORBIDDEN",
   NOT_FOUND = "NOT_FOUND",
+  METHOD_NOT_ALLOWED = "METHOD_NOT_ALLOWED",
   CONFLICT = "CONFLICT",
   BAD_REQUEST = "BAD_REQUEST",
   INTERNAL_SERVER = "INTERNAL_SERVER",
@@ -25,6 +26,10 @@ const ERROR_METADATA: Record<
   [ErrorType.NOT_FOUND]: {
     statusCode: 404,
     defaultMessage: "Resource not found",
+  },
+  [ErrorType.METHOD_NOT_ALLOWED]: {
+    statusCode: 405,
+    defaultMessage: "Method not allowed",
   },
   [ErrorType.CONFLICT]: {
     statusCode: 409,
@@ -133,5 +138,11 @@ export class GoneError extends HttpError {
 export class InternalServerError extends HttpError {
   constructor(message?: string) {
     super(ErrorType.INTERNAL_SERVER, message);
+  }
+}
+
+export class MethodNotAllowedError extends HttpError {
+  constructor(message?: string) {
+    super(ErrorType.METHOD_NOT_ALLOWED, message);
   }
 }
