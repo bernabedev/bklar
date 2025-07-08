@@ -47,7 +47,7 @@ export function jwt(options: JWTOptions): Middleware {
   const secretKey =
     typeof secret === "string" ? new TextEncoder().encode(secret) : secret;
 
-  const jwtMiddleware: Middleware = async (ctx: Context) => {
+  const jwtMiddleware: Middleware = async (ctx: Context<any>) => {
     const token = getToken(ctx);
 
     if (!token) {
