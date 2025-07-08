@@ -10,48 +10,87 @@ async function main() {
   console.log(`\n${chalk.bold.cyan("🐰 Welcome to bklar!")}`);
   console.log("Let's create a new project for you.\n");
 
-  const initialSetup = await prompts([
-    {
-      type: "text",
-      name: "projectName",
-      message: "What is the name of your project?",
-      initial: "my-bklar-app",
-      validate: (name) =>
-        name.length > 0 ? true : "Project name cannot be empty.",
-    },
-    {
-      type: "select",
-      name: "projectType",
-      message: "Choose a project template:",
-      choices: [
-        {
-          title: "Minimal",
-          description: "A blank slate. Just the bare essentials.",
-          value: "minimal",
-        },
-        {
-          title: "REST API Starter",
-          description: "A pre-configured setup with common plugins.",
-          value: "rest-api",
-        },
-        {
-          title: "Custom",
-          description: "Choose exactly which features you want.",
-          value: "custom",
-        },
-      ],
-    },
-  ]);
+  let projectDir: string | undefined = process.argv[2];
+  let selectedPlugins: string[] = [];
+  let projectType: string;
 
-  if (!initialSetup.projectName) {
+  if (projectDir) {
+    // --- NON-INTERACTIVE MODE ---
+    // A project name was provided as an argument.
+    console.log(`Project name provided: ${chalk.yellow(projectDir)}.`);
+    console.log("Using 'Minimal' template by default.");
+    projectType = "minimal";
+  } else {
+    // --- INTERACTIVE MODE ---
+    // No project name was provided, so we launch the wizard.
+    const initialSetup = await prompts([
+      {
+        type: "text",
+        name: "projectName",
+        message: "What is the name of your project?",
+        initial: "my-bklar-app",
+        validate: (name) =>
+          name.length > 0 ? true : "Project name cannot be empty.",
+      },
+      {
+        type: "select",
+        name: "projectType",
+        message: "Choose a project template:",
+        choices: [
+          {
+            title: "Minimal",
+            description: "A blank slate. Just the bare essentials.",
+            value: "minimal",
+          },
+          {
+            title: "REST API Starter",
+            description: "A pre-configured setup with common plugins.",
+            value: "rest-api",
+          },
+          {
+            title: "Custom",
+            description: "Choose exactly which features you want.",
+            value: "custom",
+          },
+        ],
+      },
+    ]);
+
+    if (!initialSetup.projectName) {
+      console.log(chalk.red("\n✖ Project creation cancelled."));
+      return;
+    }
+
+    projectDir = initialSetup.projectName;
+    projectType = initialSetup.projectType;
+
+    if (projectType === "rest-api") {
+      selectedPlugins = ["cors", "jwt", "rate-limit"];
+    } else if (projectType === "custom") {
+      const customSetup = await prompts({
+        type: "multiselect",
+        name: "plugins",
+        message: "Which official plugins would you like to include?",
+        choices: [
+          { title: "CORS Middleware (@bklarjs/cors)", value: "cors" },
+          { title: "JWT Authentication (@bklarjs/jwt)", value: "jwt" },
+          { title: "Rate Limiter (@bklarjs/rate-limit)", value: "rate-limit" },
+        ],
+        hint: "- Space to select. Return to submit.",
+      });
+      selectedPlugins = customSetup.plugins || [];
+    }
+    // For 'minimal', selectedPlugins remains an empty array.
+  }
+
+  if (!projectDir) {
     console.log(chalk.red("\n✖ Project creation cancelled."));
     return;
   }
 
-  const projectDir = initialSetup.projectName;
   const targetPath = path.resolve(process.cwd(), projectDir);
 
-  // --- Check if directory already exists ---
+  // Check if the target directory already exists.
   try {
     await fs.access(targetPath);
     console.error(
@@ -61,38 +100,15 @@ async function main() {
     );
     process.exit(1);
   } catch (e) {
-    // This is good, directory does not exist.
+    // This is the expected outcome, as the directory should not exist.
   }
 
-  // --- Determine which plugins to install based on template ---
-  let selectedPlugins: string[] = [];
-
-  if (initialSetup.projectType === "rest-api") {
-    // REST API starter includes common plugins by default
-    selectedPlugins = ["cors", "jwt", "rate-limit"];
-  } else if (initialSetup.projectType === "custom") {
-    const customSetup = await prompts({
-      type: "multiselect",
-      name: "plugins",
-      message: "Which official plugins would you like to include?",
-      choices: [
-        { title: "CORS Middleware (@bklarjs/cors)", value: "cors" },
-        { title: "JWT Authentication (@bklarjs/jwt)", value: "jwt" },
-        { title: "Rate Limiter (@bklarjs/rate-limit)", value: "rate-limit" },
-      ],
-      hint: "- Space to select. Return to submit.",
-    });
-    selectedPlugins = customSetup.plugins || [];
-  }
-  // For 'minimal', selectedPlugins remains empty.
-
+  // --- Scaffolding Logic ---
   const templatePath = path.resolve(import.meta.dir, "template");
   console.log(`\nCreating project in ${chalk.yellow(targetPath)}...`);
-
-  // --- Scaffold Project Files ---
   await fs.cp(templatePath, targetPath, { recursive: true });
 
-  // Modify package.json
+  // Modify package.json with the project name and selected plugins.
   const packageJsonPath = path.join(targetPath, "package.json");
   const packageJson = JSON.parse(await fs.readFile(packageJsonPath, "utf-8"));
   packageJson.name = projectDir.toLowerCase().replace(/\s+/g, "-");
@@ -104,7 +120,7 @@ async function main() {
   }
   await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
-  // Modify index.ts to include setup code for selected plugins
+  // Modify index.ts to include setup code for the selected plugins.
   const indexPath = path.join(targetPath, "index.ts");
   let indexContent = await fs.readFile(indexPath, "utf-8");
 
@@ -120,11 +136,15 @@ async function main() {
     setupCode += `\n// Apply a global rate limit\napp.use(rateLimit({ windowMs: 60 * 1000, max: 100 }));\n`;
   }
 
-  indexContent = importsToAdd + indexContent;
-  indexContent = indexContent.replace(
-    "const app = Bklar();",
-    `const app = Bklar();${setupCode}`
-  );
+  if (importsToAdd) {
+    indexContent = importsToAdd + indexContent;
+  }
+  if (setupCode) {
+    indexContent = indexContent.replace(
+      "const app = Bklar();",
+      `const app = Bklar();${setupCode}`
+    );
+  }
   await fs.writeFile(indexPath, indexContent);
 
   console.log(chalk.green("\n✔ Project files created successfully!"));
@@ -180,6 +200,16 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(chalk.red("\nAn unexpected error occurred:"), err);
+  if (err.isTtyError) {
+    // Handle cases where `prompts` is used in a non-interactive environment.
+    console.error(
+      chalk.red(
+        "\n✖ This command can't be run in a non-interactive environment without a project name."
+      )
+    );
+    console.error(chalk.cyan("  Try running: bun create bklar <project-name>"));
+  } else {
+    console.error(chalk.red("\nAn unexpected error occurred:"), err);
+  }
   process.exit(1);
 });
