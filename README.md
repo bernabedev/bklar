@@ -263,6 +263,8 @@ const app = Bklar({
 
 - **[@bklarjs/jwt](https://npmjs.com/package/@bklarjs/jwt):** Middleware for JSON Web Token authentication.
 - **[@bklarjs/cors](https://npmjs.com/package/@bklarjs/cors):** Middleware for Cross-Origin Resource Sharing.
+- **[@bklarjs/rate-limit](https://npmjs.com/package/@bklarjs/rate-limit):** Middleware for rate limiting.
+- **[@bklarjs/swagger](https://npmjs.com/package/@bklarjs/swagger):** OpenAPI (Swagger) and Scalar documentation generator.
 
 ## 🤝 Contributing
 
