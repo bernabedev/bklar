@@ -1,10 +1,11 @@
+import { cors } from "@bklarjs/cors";
 import { jwt, sign } from "@bklarjs/jwt";
 import { Bklar } from "bklar";
 import { NotFoundError, UnauthorizedError } from "bklar/errors";
 import { z } from "zod";
 
 const app = Bklar();
-
+app.use(cors());
 const JWT_SECRET = "a-super-secret-key-that-should-be-in-an-env";
 
 // --- Mock Database and User Service ---

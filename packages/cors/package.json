@@ -1,0 +1,17 @@
+{
+  "name": "@bklarjs/cors",
+  "version": "0.1.0",
+  "description": "CORS middleware for the bklar framework.",
+  "main": "index.ts",
+  "files": [
+    "dist"
+  ],
+  "author": "Freilyn Bernabe <freilyn@bernabe.dev> (https://bernabe.dev)",
+  "license": "MIT",
+  "dependencies": {
+    "bklar": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

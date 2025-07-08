@@ -21,7 +21,7 @@ export type Handler<S extends Schemas = {}> = (
 
 export type Middleware<S extends Schemas = {}> = (
   ctx: InferContext<S>
-) => void | Promise<void>;
+) => void | Response | Promise<void | Response>;
 
 export interface RouteOptions<S extends Schemas> {
   schemas?: S;

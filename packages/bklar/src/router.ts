@@ -95,9 +95,12 @@ export class Router {
   private async executeMiddlewares(
     ctx: Context<any>,
     middlewares: Middleware[]
-  ) {
+  ): Promise<Response | void> {
     for (const mw of middlewares) {
-      await mw(ctx);
+      const result = await mw(ctx);
+      if (result instanceof Response) {
+        return result;
+      }
     }
   }
 
@@ -129,7 +132,9 @@ export class Router {
     }
   }
 
-  async handle(req: Request): Promise<Response> {
+  async handle(
+    req: Request
+  ): Promise<{ response: Response; context: Context<any> | null }> {
     const url = new URL(req.url);
     const pathSegments = url.pathname.split("/").filter(Boolean);
 
@@ -165,7 +170,8 @@ export class Router {
           await this.executeMiddlewares(ctx, route.options.middlewares);
         }
 
-        return await route.handler(ctx);
+        const response = await route.handler(ctx);
+        return { response, context: ctx };
       } catch (error) {
         if (error instanceof ValidationError) {
           const validationError = new HttpError(
@@ -173,15 +179,22 @@ export class Router {
             "Validation failed",
             error.details
           );
-          return this.errorHandler(validationError);
+          return {
+            response: await this.errorHandler(validationError),
+            context: ctx,
+          };
         }
-        return this.errorHandler(error);
+        return { response: await this.errorHandler(error), context: ctx };
       }
     }
 
-    return new Response(JSON.stringify({ message: "Route not found" }), {
-      status: 404,
-      headers: { "Content-Type": "application/json" },
-    });
+    const notFoundResponse = new Response(
+      JSON.stringify({ message: "Route not found" }),
+      {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+    return { response: notFoundResponse, context: null };
   }
 }
