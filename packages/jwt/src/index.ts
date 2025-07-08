@@ -1,7 +1,7 @@
 import type { Context, Middleware } from "bklar";
 import { UnauthorizedError } from "bklar/errors";
-import * as jose from "jose";
 import type { JWTPayload } from "jose";
+import * as jose from "jose";
 
 export * from "./helpers";
 
@@ -41,7 +41,7 @@ export function jwt(options: JWTOptions): Middleware {
   } = options;
 
   if (!secret) {
-    throw new Error("JWT secret is required for @bklar/jwt");
+    throw new Error("JWT secret is required for @bklarjs/jwt");
   }
 
   const secretKey =

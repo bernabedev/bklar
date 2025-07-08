@@ -17,7 +17,7 @@ Inspired by simplicity, bklar integrates validation with [Zod](https://zod.dev/)
 - 🎨 **Clear & Expressive Syntax:** A fluent and easy-to-learn API that you'll love to use.
 - 🧩 **Middlewares & Groups:** Logically organize your code with middlewares at the global, group, or route level.
 - 📝 **Built-in Logger:** A colorful and useful logger is enabled by default and is fully customizable.
-- 📦 **Extensible Ecosystem:** Designed to be extended with packages like `@bklar/jwt`.
+- 📦 **Extensible Ecosystem:** Designed to be extended with packages like `@bklarjs/jwt`.
 - 🛡️ **End-to-End Type-Safety:** Leverage the full power of TypeScript without complex configurations.
 
 ## 🚀 Getting Started
@@ -261,7 +261,7 @@ const app = Bklar({
 
 ## 🌳 Ecosystem
 
-- **[@bklar/jwt](https://npmjs.com/package/@bklar/jwt):** Middleware for JSON Web Token authentication.
+- **[@bklarjs/jwt](https://npmjs.com/package/@bklarjs/jwt):** Middleware for JSON Web Token authentication.
 
 ## 🤝 Contributing
 

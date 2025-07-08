@@ -1,4 +1,4 @@
-import { jwt, sign } from "@bklar/jwt";
+import { jwt, sign } from "@bklarjs/jwt";
 import { Bklar } from "bklar";
 import { NotFoundError, UnauthorizedError } from "bklar/errors";
 import { z } from "zod";

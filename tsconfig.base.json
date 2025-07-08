@@ -26,7 +26,7 @@
     "noPropertyAccessFromIndexSignature": false,
 
     "paths": {
-      "@bklar/*": ["./packages/*/src"]
+      "@bklarjs/*": ["./packages/*/src"]
     }
   }
 }

@@ -6,7 +6,7 @@ import { jwt as createJwt, decode, sign, verify } from "../index";
 
 const JWT_SECRET = "my-super-secret-key-for-testing";
 
-describe("@bklar/jwt Package Tests", () => {
+describe("@bklarjs/jwt Package Tests", () => {
   // --- PARTE 1: Tests para los Helpers ---
   describe("Helper Functions (sign, verify, decode)", () => {
     const payload = { sub: "123", email: "test@example.com" };
