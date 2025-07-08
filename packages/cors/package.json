@@ -3,11 +3,28 @@
   "version": "0.1.0",
   "description": "CORS middleware for the bklar framework.",
   "main": "index.ts",
+  "keywords": [
+    "bklar",
+    "bun",
+    "jwt",
+    "auth",
+    "authentication",
+    "middleware"
+  ],
   "files": [
     "dist"
   ],
   "author": "Freilyn Bernabe <freilyn@bernabe.dev> (https://bernabe.dev)",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bernabedev/bklar.git",
+    "directory": "packages/cors"
+  },
+  "homepage": "https://github.com/bernabedev/bklar/tree/main/packages/cors#readme",
+  "bugs": {
+    "url": "https://github.com/bernabedev/bklar/issues"
+  },
   "dependencies": {
     "bklar": "workspace:*"
   },
