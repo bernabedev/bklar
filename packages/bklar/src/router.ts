@@ -198,10 +198,18 @@ export class Router {
         }
       }
 
+      // Apply CORS headers
       if (ctx.state.corsHeaders instanceof Headers) {
         // @ts-expect-error Headers is not iterable
         for (const [key, value] of ctx.state.corsHeaders.entries()) {
           response.headers.append(key, value);
+        }
+      }
+
+      // Apply Rate Limit headers
+      if (ctx.state.rateLimitHeaders) {
+        for (const [key, value] of Object.entries(ctx.state.rateLimitHeaders)) {
+          response.headers.set(key, String(value));
         }
       }
 

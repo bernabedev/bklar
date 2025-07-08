@@ -92,14 +92,18 @@ export class BklarApp {
       fetch: async (req, server) => {
         const start = performance.now();
 
+        // Add client IP to request headers
+        const ip =
+          req.headers.get("x-forwarded-for")?.split(",")[0] ||
+          server.requestIP(req)?.address;
+        if (ip) {
+          req.headers.set("X-Client-IP", ip);
+        }
+
         const res = await this.router.handle(req);
 
         if (loggingEnabled) {
           const duration = performance.now() - start;
-          const ip =
-            req.headers.get("x-forwarded-for")?.split(",")[0] ||
-            server.requestIP(req)?.address;
-
           logger(req, duration, res.status, ip);
         }
 
