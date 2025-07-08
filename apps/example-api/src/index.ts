@@ -1,6 +1,7 @@
 import { cors } from "@bklarjs/cors";
 import { jwt, sign } from "@bklarjs/jwt";
 import { rateLimit } from "@bklarjs/rate-limit";
+import { swagger } from "@bklarjs/swagger";
 import { Bklar } from "bklar";
 import { NotFoundError, UnauthorizedError } from "bklar/errors";
 import { z } from "zod";
@@ -61,6 +62,11 @@ app.get(
     return ctx.json(users);
   },
   {
+    doc: {
+      tags: ["Users"],
+      description: "Get all users",
+      summary: "Get all users (public)",
+    },
     schemas: {
       query: z.object({
         page: z.coerce.number().default(1),
@@ -146,4 +152,5 @@ app.put(
   }
 );
 
+swagger({ path: "/docs" }).setup(app);
 app.listen(4000);

@@ -23,9 +23,26 @@ export type Middleware<S extends Schemas = {}> = (
   ctx: InferContext<S>
 ) => void | Response | Promise<void | Response>;
 
+export interface RouteDoc {
+  summary?: string;
+  description?: string;
+  tags?: string[];
+  responses?: {
+    [statusCode: string]: {
+      description: string;
+      content?: {
+        [mimeType: string]: {
+          schema: any;
+        };
+      };
+    };
+  };
+}
+
 export interface RouteOptions<S extends Schemas> {
   schemas?: S;
   middlewares?: Middleware<S>[];
+  doc?: RouteDoc;
 }
 
 export interface Route<S extends Schemas> {
