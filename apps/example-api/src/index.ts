@@ -138,13 +138,14 @@ app.post(
 
 // --- Protected Routes ---
 
-const authMiddleware = jwt({ secret: JWT_SECRET });
+const authMiddleware = jwt<{ email: string }>({ secret: JWT_SECRET });
 
 // Protected profile route
 app.get(
   "/profile",
   (ctx) => {
     const userPayload = ctx.state.jwt;
+    userPayload?.email;
     const user = UserService.find(Number(userPayload?.sub));
     return ctx.json({
       message: "This is a protected route. Welcome!",
