@@ -1,6 +1,6 @@
 import type { Context, Middleware } from "bklar";
 import { UnauthorizedError } from "bklar/errors";
-import type { JWTPayload } from "jose";
+import type { JWTPayload as JoseJWTPayload } from "jose";
 import * as jose from "jose";
 
 export * from "./helpers";
@@ -15,7 +15,7 @@ export interface JWTOptions {
 declare module "bklar" {
   interface Context<T> {
     state: {
-      jwt?: JWTPayload;
+      jwt?: JoseJWTPayload;
       [key: string]: any;
     };
   }
@@ -32,7 +32,9 @@ const defaultGetToken = (ctx: Context<any>): string | undefined => {
   return undefined;
 };
 
-export function jwt(options: JWTOptions): Middleware {
+export function jwt<T extends JoseJWTPayload = JoseJWTPayload>(
+  options: JWTOptions
+): Middleware {
   const {
     secret,
     algorithms = ["HS256"],
@@ -61,7 +63,7 @@ export function jwt(options: JWTOptions): Middleware {
       const { payload } = await jose.jwtVerify(token, secretKey, {
         algorithms,
       });
-      ctx.state.jwt = payload;
+      ctx.state.jwt = payload as T;
     } catch (err) {
       if (passthrough) {
         return;
