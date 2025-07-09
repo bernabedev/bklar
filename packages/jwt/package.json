@@ -1,6 +1,6 @@
 {
   "name": "@bklarjs/jwt",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A JWT-based authentication middleware designed for the Bklar web framework.",
   "type": "module",
   "keywords": [
