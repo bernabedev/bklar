@@ -1,6 +1,6 @@
-import type { Context, Middleware } from "bklar";
+import type { InferContext, Middleware } from "bklar";
 import { UnauthorizedError } from "bklar/errors";
-import type { JWTPayload as JoseJWTPayload } from "jose";
+import type { JWTPayload } from "jose";
 import * as jose from "jose";
 
 export * from "./helpers";
@@ -8,20 +8,17 @@ export * from "./helpers";
 export interface JWTOptions {
   secret: string | Uint8Array;
   algorithms?: string[];
-  getToken?: (ctx: Context<any>) => string | undefined;
+  getToken?: (ctx: InferContext<any>) => string | undefined;
   passthrough?: boolean;
 }
 
 declare module "bklar" {
-  interface Context<T> {
-    state: {
-      jwt?: JoseJWTPayload;
-      [key: string]: any;
-    };
+  interface State {
+    jwt?: JWTPayload;
   }
 }
 
-const defaultGetToken = (ctx: Context<any>): string | undefined => {
+const defaultGetToken = (ctx: InferContext<any>): string | undefined => {
   const authHeader = ctx.req.headers.get("Authorization");
   if (authHeader) {
     const [type, token] = authHeader.split(" ");
@@ -32,7 +29,7 @@ const defaultGetToken = (ctx: Context<any>): string | undefined => {
   return undefined;
 };
 
-export function jwt<T extends JoseJWTPayload = JoseJWTPayload>(
+export function jwt<T extends JWTPayload = JWTPayload>(
   options: JWTOptions
 ): Middleware {
   const {
@@ -49,7 +46,7 @@ export function jwt<T extends JoseJWTPayload = JoseJWTPayload>(
   const secretKey =
     typeof secret === "string" ? new TextEncoder().encode(secret) : secret;
 
-  const jwtMiddleware: Middleware = async (ctx: Context<any>) => {
+  const jwtMiddleware: Middleware = async (ctx: InferContext<any>) => {
     const token = getToken(ctx);
 
     if (!token) {
