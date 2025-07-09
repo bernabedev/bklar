@@ -166,3 +166,5 @@ export class BklarApp {
 export function Bklar(options?: BklarOptions) {
   return new BklarApp(options);
 }
+
+export type BklarInstance = ReturnType<typeof Bklar>;
