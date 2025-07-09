@@ -1,6 +1,6 @@
 {
   "name": "bklar",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A simple, fast, and modern web framework for Bun.",
   "keywords": [
     "bun",
@@ -11,7 +11,7 @@
     "fast",
     "typescript"
   ],
-  "author": "Tu Nombre <tu.email@example.com> (https://tu-sitio-web.com)",
+  "author": "Freilyn Bernabe <freilyn@bernabe.dev> (https://bernabe.dev)",
   "license": "MIT",
   "repository": {
     "type": "git",
