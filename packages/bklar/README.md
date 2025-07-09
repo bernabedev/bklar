@@ -162,6 +162,76 @@ app.group(
 );
 ```
 
+### 🔌 Lifecycle Hooks
+
+bklar provides a powerful hook system that allows you to tap into the request-response lifecycle at specific points. This is useful for advanced logic, plugins, performance monitoring, and more.
+
+All hooks are registered on the `app` instance.
+
+```typescript
+import { Bklar } from "bklar";
+
+const app = Bklar();
+
+// 1. `onRequest` - Runs at the very beginning of every request.
+// `app.use()` is an alias for this hook.
+app.onRequest((ctx) => {
+  ctx.state.startTime = performance.now();
+  console.log(`Received request: ${ctx.req.method} ${ctx.req.url}`);
+});
+
+// 2. `preParse` - Runs before the request body, query, and params are parsed.
+app.preParse((ctx) => {
+  // You could modify headers here before they are processed.
+});
+
+// 3. `preHandler` - Runs after validation but just before the route handler.
+app.preHandler((ctx) => {
+  // Useful for last-minute checks or adding data to the context.
+  console.log("Validation passed, about to run handler...");
+});
+
+// 4. `onResponse` - Runs just before the response is sent back to the client.
+// This hook receives both the context and the final Response object.
+app.onResponse((ctx, response) => {
+  const duration = performance.now() - ctx.state.startTime;
+  console.log(
+    `Request handled in ${duration.toFixed(2)}ms with status ${response.status}`
+  );
+});
+
+// 5. `onError` - Runs only when an error is thrown anywhere in the lifecycle.
+app.onError((ctx, error) => {
+  // Ideal for logging errors to an external service like Sentry or Logtail.
+  console.error("An error occurred:", error);
+});
+
+// Your route handlers
+app.get("/", (ctx) => {
+  return ctx.json({ message: "Hello from a hooked-up app!" });
+});
+
+app.listen(3000);
+```
+
+#### Order of Execution
+
+The hooks and route-specific logic execute in the following order:
+
+1.  **`onRequest`** hooks (and `app.use()` middlewares)
+2.  **`preParse`** hooks
+3.  _Request parsing (query, body)_
+4.  Route matching
+5.  Route-specific **`middlewares`**
+6.  **`preValidation`** hooks
+7.  _Schema validation_
+8.  **`preHandler`** hooks
+9.  Route **`handler`**
+10. **`onResponse`** hooks (runs after the response is created, even on error)
+11. Response is sent
+
+If an error is thrown at any point, the cycle is interrupted, and the **`onError`** hooks are executed before the final error response is generated and sent to `onResponse`.
+
 ### 🛡️ Error Handling
 
 bklar comes with a powerful and semantic error handling system out of the box. Simply `throw` one of the built-in error classes from your handler, and bklar will automatically catch it and send a properly formatted JSON response with the correct HTTP status code.

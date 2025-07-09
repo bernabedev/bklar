@@ -7,21 +7,45 @@ import {
 } from "./errors";
 import type {
   ErrorHandler,
+  ErrorHook,
   Handler,
+  Hook,
   Middleware,
+  ResponseHook,
   Route,
   RouteOptions,
   Schemas,
 } from "./types";
 import { ValidationError } from "./types";
 
+interface RouterOptions {
+  errorHandler?: ErrorHandler;
+  hooks?: {
+    onRequest?: Hook[];
+    preParse?: Hook[];
+    preValidation?: Hook[];
+    preHandler?: Hook[];
+    onResponse?: ResponseHook[];
+    onError?: ErrorHook[];
+  };
+}
+
 export class Router {
   private routes: Route<any>[] = [];
   private globalMiddlewares: Middleware[] = [];
   private readonly errorHandler: ErrorHandler;
+  private readonly hooks: Required<NonNullable<RouterOptions["hooks"]>>;
 
-  constructor(options: { errorHandler?: ErrorHandler } = {}) {
+  constructor(options: RouterOptions = {}) {
     this.errorHandler = options.errorHandler || defaultErrorHandler;
+    this.hooks = {
+      onRequest: options.hooks?.onRequest || [],
+      preParse: options.hooks?.preParse || [],
+      preValidation: options.hooks?.preValidation || [],
+      preHandler: options.hooks?.preHandler || [],
+      onResponse: options.hooks?.onResponse || [],
+      onError: options.hooks?.onError || [],
+    };
   }
 
   use(middleware: Middleware) {
@@ -109,6 +133,38 @@ export class Router {
     }
   }
 
+  private async executeHooks(
+    ctx: Context<any>,
+    hooks: Hook[]
+  ): Promise<Response | void> {
+    for (const hook of hooks) {
+      const result = await hook(ctx);
+      if (result instanceof Response) {
+        return result;
+      }
+    }
+  }
+
+  private async executeResponseHooks(
+    ctx: Context<any>,
+    response: Response,
+    hooks: ResponseHook[]
+  ) {
+    for (const hook of hooks) {
+      await hook(ctx, response);
+    }
+  }
+
+  private async executeErrorHooks(
+    ctx: Context<any>,
+    error: unknown,
+    hooks: ErrorHook[]
+  ) {
+    for (const hook of hooks) {
+      await hook(ctx, error);
+    }
+  }
+
   private async validate(ctx: Context<any>, schemas: Schemas | undefined) {
     if (!schemas) return;
 
@@ -162,17 +218,32 @@ export class Router {
 
       ctx.params = params;
 
+      // Execute route-specific middlewares (which are also hooks)
       if (route.options.middlewares) {
-        const shortCircuitResponse = await this.executeMiddlewares(
+        const shortCircuitResponse = await this.executeHooks(
           ctx,
           route.options.middlewares
         );
         if (shortCircuitResponse) return shortCircuitResponse;
       }
 
+      // --- preValidation Hook ---
+      let shortCircuitResponse = await this.executeHooks(
+        ctx,
+        this.hooks.preValidation
+      );
+      if (shortCircuitResponse) return shortCircuitResponse;
+
       if (route.options.schemas) {
         await this.validate(ctx, route.options.schemas);
       }
+
+      // --- preHandler Hook ---
+      shortCircuitResponse = await this.executeHooks(
+        ctx,
+        this.hooks.preHandler
+      );
+      if (shortCircuitResponse) return shortCircuitResponse;
 
       return await route.handler(ctx);
     }
@@ -185,23 +256,28 @@ export class Router {
     let response: Response;
 
     try {
+      // --- onRequest Hook ---
+      let shortCircuitResponse = await this.executeHooks(
+        ctx,
+        this.hooks.onRequest
+      );
+      if (shortCircuitResponse) return shortCircuitResponse;
+
+      // --- preParse Hook ---
+      shortCircuitResponse = await this.executeHooks(ctx, this.hooks.preParse);
+      if (shortCircuitResponse) return shortCircuitResponse;
+
       ctx.query = Object.fromEntries(new URL(req.url).searchParams.entries());
 
-      const shortCircuitResponse = await this.executeMiddlewares(
-        ctx,
-        this.globalMiddlewares
-      );
-
-      if (shortCircuitResponse) {
-        response = shortCircuitResponse;
-      } else {
-        response = await this._findAndExecuteRoute(ctx);
-      }
+      response = await this._findAndExecuteRoute(ctx);
     } catch (error) {
+      // --- onError Hook ---
+      await this.executeErrorHooks(ctx, error, this.hooks.onError);
+
       if (error instanceof ValidationError) {
         const validationError = new HttpError(
           ErrorType.VALIDATION,
-          "Validation failed",
+          "Validation Error",
           error.details
         );
         response = await this.errorHandler(validationError, ctx);
@@ -210,15 +286,16 @@ export class Router {
       }
     }
 
-    // Apply CORS headers
+    // --- onResponse Hook ---
+    await this.executeResponseHooks(ctx, response, this.hooks.onResponse);
+
+    // Final post-processing
     if (ctx.state.corsHeaders instanceof Headers) {
       // @ts-expect-error Headers is not iterable
       for (const [key, value] of ctx.state.corsHeaders.entries()) {
         response.headers.append(key, value);
       }
     }
-
-    // Apply Rate Limit headers
     if (ctx.state.rateLimitHeaders) {
       for (const [key, value] of Object.entries(ctx.state.rateLimitHeaders)) {
         response.headers.set(key, String(value));

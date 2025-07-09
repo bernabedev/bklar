@@ -8,9 +8,27 @@ import { NotFoundError, UnauthorizedError } from "bklar/errors";
 import { z } from "zod";
 
 const app = Bklar();
-app.use(staticServer({ root: "./public" }));
+app.onRequest((ctx) => {
+  console.log("Request received");
+});
+app.preParse((ctx) => {
+  console.log("Pre-parsing");
+});
+app.preValidation((ctx) => {
+  console.log("Pre-validation");
+});
+app.preHandler((ctx) => {
+  console.log("Pre-handler");
+});
+app.onResponse((ctx) => {
+  console.log("Response");
+});
+app.onError((ctx) => {
+  console.log("Error");
+});
 app.use(cors({ origin: true }));
 app.use(rateLimit({ max: 100 }));
+app.use(staticServer({ root: "./public" }));
 const JWT_SECRET = "a-super-secret-key-that-should-be-in-an-env";
 
 // --- Mock Database and User Service ---

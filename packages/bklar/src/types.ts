@@ -19,9 +19,7 @@ export type Handler<S extends Schemas = {}> = (
   ctx: InferContext<S>
 ) => Response | Promise<Response>;
 
-export type Middleware<S extends Schemas = {}> = (
-  ctx: InferContext<S>
-) => void | Response | Promise<void | Response>;
+export type Middleware = Hook;
 
 export interface RouteDoc {
   summary?: string;
@@ -41,7 +39,7 @@ export interface RouteDoc {
 
 export interface RouteOptions<S extends Schemas> {
   schemas?: S;
-  middlewares?: Middleware<S>[];
+  middlewares?: Hook[];
   doc?: RouteDoc;
 }
 
@@ -71,7 +69,33 @@ export type ErrorHandler = (
   ctx?: Context<any>
 ) => Response | Promise<Response>;
 
+// A generic hook type. It can be async and can short-circuit the request
+// by returning a Response object.
+export type Hook = (
+  ctx: Context<any>
+) => void | Promise<void> | Response | Promise<Response>;
+
+// A specific hook type for the onResponse event. It receives the final
+// Response object and can inspect or log it, but not change it.
+export type ResponseHook = (
+  ctx: Context<any>,
+  response: Response
+) => void | Promise<void>;
+
+// A specific hook type for the onError event. It receives the error
+// for logging or monitoring purposes.
+export type ErrorHook = (
+  ctx: Context<any>,
+  error: unknown
+) => void | Promise<void>;
+
 export interface BklarOptions {
   logger?: boolean | Logger;
   errorHandler?: ErrorHandler;
+  onRequest?: Hook[];
+  preParse?: Hook[];
+  preValidation?: Hook[];
+  preHandler?: Hook[];
+  onResponse?: ResponseHook[];
+  onError?: ErrorHook[];
 }

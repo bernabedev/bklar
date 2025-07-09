@@ -29,7 +29,7 @@ describe("Core Framework Tests", () => {
 
       expect(res.status).toBe(404);
       const body = await res.json();
-      expect(body.message).toBe("Route not found");
+      expect(body.message).toBe("Resource not found");
     });
 
     it("should differentiate between HTTP methods", async () => {

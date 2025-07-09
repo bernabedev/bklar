@@ -2,8 +2,11 @@ import { type Server } from "bun";
 import { Router } from "./router";
 import type {
   BklarOptions,
+  ErrorHook,
   Handler,
+  Hook,
   Middleware,
+  ResponseHook,
   RouteOptions,
   Schemas,
 } from "./types";
@@ -12,17 +15,28 @@ import { defaultLogger } from "./utils/logger";
 export class BklarApp {
   public readonly router: Router;
   public readonly options: BklarOptions;
+  private hooks: Required<Omit<BklarOptions, "logger" | "errorHandler">> = {
+    onRequest: [],
+    preParse: [],
+    preValidation: [],
+    preHandler: [],
+    onResponse: [],
+    onError: [],
+  };
 
   constructor(options: BklarOptions = {}) {
     this.options = {
       logger: options.logger ?? true,
       ...options,
     };
-    this.router = new Router({ errorHandler: this.options.errorHandler });
+    this.router = new Router({
+      errorHandler: this.options.errorHandler,
+      hooks: this.hooks,
+    });
   }
 
-  use(middleware: Middleware) {
-    this.router.use(middleware);
+  use(hook: Hook) {
+    this.hooks.onRequest.push(hook);
     return this;
   }
 
@@ -121,6 +135,31 @@ export class BklarApp {
 
     if (callback) callback(server);
     return server;
+  }
+
+  onRequest(hook: Hook) {
+    this.hooks.onRequest.push(hook);
+    return this;
+  }
+  preParse(hook: Hook) {
+    this.hooks.preParse.push(hook);
+    return this;
+  }
+  preValidation(hook: Hook) {
+    this.hooks.preValidation.push(hook);
+    return this;
+  }
+  preHandler(hook: Hook) {
+    this.hooks.preHandler.push(hook);
+    return this;
+  }
+  onResponse(hook: ResponseHook) {
+    this.hooks.onResponse.push(hook);
+    return this;
+  }
+  onError(hook: ErrorHook) {
+    this.hooks.onError.push(hook);
+    return this;
   }
 }
 
