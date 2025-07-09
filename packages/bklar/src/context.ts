@@ -1,6 +1,8 @@
+import { State } from "./types";
+
 export class Context<T extends { query: any; params: any; body: any }> {
   public readonly req: Request;
-  public state: Record<string, unknown> = {};
+  public state: State = {};
   public params: T["params"];
   public query: T["query"] = {} as T["query"];
   public body: T["body"] = {} as T["body"];

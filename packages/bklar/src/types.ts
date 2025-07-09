@@ -99,3 +99,5 @@ export interface BklarOptions {
   onResponse?: ResponseHook[];
   onError?: ErrorHook[];
 }
+
+export interface State {}
