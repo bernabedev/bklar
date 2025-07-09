@@ -40,11 +40,8 @@ export interface CorsOptions {
 }
 
 declare module "bklar" {
-  interface Context<T> {
-    state: {
-      corsHeaders?: Headers;
-      [key: string]: any;
-    };
+  interface State {
+    corsHeaders?: Headers;
   }
 }
 
