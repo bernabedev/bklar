@@ -119,14 +119,11 @@ export function rateLimit(options: RateLimitOptions = {}): Middleware {
 
 // Module Augmentation for type safety
 declare module "bklar" {
-  interface Context<T> {
-    state: {
-      rateLimitHeaders?: {
-        "X-RateLimit-Limit": number;
-        "X-RateLimit-Remaining": number;
-        "X-RateLimit-Reset": number;
-      };
-      [key: string]: any;
+  interface State {
+    rateLimitHeaders?: {
+      "X-RateLimit-Limit": number;
+      "X-RateLimit-Remaining": number;
+      "X-RateLimit-Reset": number;
     };
   }
 }
