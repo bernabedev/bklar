@@ -53,6 +53,6 @@ A quick look at the files and directories included:
 
 ---
 
-Find an issue or have a suggestion? [Open an issue](https://github.com/[your-username]/[your-repository]/issues) on our GitHub repository.
+Find an issue or have a suggestion? [Open an issue](https://github.com/bernabedev/bklar/issues) on our GitHub repository.
 
 Happy coding!

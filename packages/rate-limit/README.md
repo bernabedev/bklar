@@ -122,7 +122,7 @@ app.post(
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please open an [issue](https://github.com/[your-username]/[your-repository]/issues) or submit a Pull Request to the main `bklar` repository.
+Contributions are welcome! Please open an [issue](https://github.com/bernabedev/bklar/issues) or submit a Pull Request to the main `bklar` repository.
 
 ## 📄 License
 

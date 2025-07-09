@@ -68,7 +68,7 @@ Depending on your choices, the generated project will include:
 
 ## 🤝 Contributing
 
-This package is part of the main `bklar` repository. Contributions are welcome! Please open an [issue](https://github.com/[your-username]/[your-repository]/issues) or submit a Pull Request.
+This package is part of the main `bklar` repository. Contributions are welcome! Please open an [issue](https://github.com/bernabedev/bklar/issues) or submit a Pull Request.
 
 ## 📄 License
 
