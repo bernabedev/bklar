@@ -1,4 +1,4 @@
-import type { Context, Middleware } from "bklar";
+import type { InferContext, Middleware } from "bklar";
 import { TooManyRequestsError } from "bklar/errors";
 
 /**
@@ -28,7 +28,7 @@ export interface RateLimitOptions {
    * @param ctx The bklar context.
    * @returns A string identifier for the client.
    */
-  keyGenerator?: (ctx: Context<any>) => string;
+  keyGenerator?: (ctx: InferContext<any>) => string;
 
   /**
    * If `true`, adds `X-RateLimit-*` headers to the response.
@@ -56,8 +56,7 @@ setInterval(() => {
 /**
  * A function to generate a key from the client's IP address.
  */
-const defaultKeyGenerator = (ctx: Context<any>): string => {
-  // @ts-expect-error req is not defined on Context
+const defaultKeyGenerator = (ctx: InferContext<any>): string => {
   return ctx.req.headers.get("X-Client-IP") || "127.0.0.1";
 };
 

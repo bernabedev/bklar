@@ -1,6 +1,6 @@
 {
   "name": "@bklarjs/rate-limit",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Rate-limiting middleware for the bklar web framework.",
   "type": "module",
   "main": "dist/index.js",
