@@ -8,6 +8,7 @@ import { NotFoundError, UnauthorizedError } from "bklar/errors";
 import { z } from "zod";
 
 const app = Bklar();
+
 app.onRequest((ctx) => {
   console.log("Request received");
 });
@@ -20,12 +21,13 @@ app.preValidation((ctx) => {
 app.preHandler((ctx) => {
   console.log("Pre-handler");
 });
-app.onResponse((ctx) => {
-  console.log("Response");
-});
 app.onError((ctx) => {
   console.log("Error");
 });
+app.onResponse((ctx) => {
+  console.log("Response");
+});
+
 app.use(cors({ origin: true }));
 app.use(rateLimit({ max: 100 }));
 app.use(staticServer({ root: "./public" }));
