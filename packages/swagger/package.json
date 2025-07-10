@@ -1,6 +1,6 @@
 {
   "name": "@bklarjs/swagger",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "OpenAPI (Swagger) and Scalar documentation generator for the bklar framework.",
   "type": "module",
   "main": "dist/index.js",
