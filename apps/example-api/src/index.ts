@@ -73,9 +73,34 @@ const UserService = {
 
 // --- Public Routes ---
 
-app.get("/health", (ctx) => {
-  return ctx.json({ status: "ok" });
-});
+app.get(
+  "/health",
+  (ctx) => {
+    return ctx.json({ status: "ok" });
+  },
+  {
+    doc: {
+      tags: ["Health"],
+      description: "Health check",
+      summary: "Health check (public)",
+      responses: {
+        "200": {
+          description: "OK",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  status: { type: "string" },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  }
+);
 
 app.get(
   "/users",
@@ -88,6 +113,22 @@ app.get(
       tags: ["Users"],
       description: "Get all users",
       summary: "Get all users (public)",
+      responses: {
+        "200": {
+          description: "A list of users.",
+          content: {
+            "application/json": {
+              schema: z.array(
+                z.object({
+                  id: z.number(),
+                  name: z.string(),
+                  email: z.string(),
+                })
+              ),
+            },
+          },
+        },
+      },
     },
     schemas: {
       query: z.object({
@@ -171,6 +212,25 @@ app.put(
     schemas: {
       params: z.object({ id: z.coerce.number() }),
       body: z.object({ name: z.string() }),
+    },
+    doc: {
+      tags: ["Users"],
+      description: "Update a user",
+      summary: "Update a user (protected)",
+      responses: {
+        "200": {
+          description: "The updated user.",
+          content: {
+            "application/json": {
+              schema: z.object({
+                id: z.number(),
+                name: z.string(),
+                email: z.string(),
+              }),
+            },
+          },
+        },
+      },
     },
   }
 );
