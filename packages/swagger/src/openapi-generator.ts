@@ -1,4 +1,4 @@
-import { BklarApp } from "bklar";
+import type { BklarInstance } from "bklar";
 import type { OpenAPIObject } from "openapi3-ts/oas31";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
@@ -13,7 +13,10 @@ function pathToOpenAPI(path: string[]): string {
   );
 }
 
-export function generateOpenAPI(app: BklarApp, config: any): OpenAPIObject {
+export function generateOpenAPI(
+  app: BklarInstance,
+  config: any
+): OpenAPIObject {
   const openApi: OpenAPIObject = {
     openapi: "3.1.0",
     info: {
@@ -83,6 +86,20 @@ export function generateOpenAPI(app: BklarApp, config: any): OpenAPIObject {
           },
         },
       };
+    }
+
+    for (const resp of Object.values(operation.responses)) {
+      if (!resp.content) continue;
+      for (const media of Object.values(resp.content)) {
+        const schemaOrZod = (media as any).schema;
+        if (
+          schemaOrZod &&
+          typeof schemaOrZod === "object" &&
+          schemaOrZod._def
+        ) {
+          (media as any).schema = zodToJsonSchema(schemaOrZod);
+        }
+      }
     }
 
     openApi.paths[path][method] = operation;

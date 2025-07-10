@@ -1,4 +1,4 @@
-import type { BklarApp } from "bklar";
+import type { BklarInstance } from "bklar";
 import { getAbsoluteFSPath } from "swagger-ui-dist";
 import { generateOpenAPI } from "./openapi-generator";
 import { getScalarHTML, getSwaggerHTML } from "./ui";
@@ -19,7 +19,7 @@ export function swagger(options: SwaggerOptions = {}) {
   };
 
   // The setup function to be called on the app instance
-  const setup = (app: BklarApp) => {
+  const setup = (app: BklarInstance) => {
     // Generate the OpenAPI spec only once
     const openApiSpec = generateOpenAPI(app, config.openapi);
 
