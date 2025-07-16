@@ -18,10 +18,15 @@ export function swagger(options: SwaggerOptions = {}) {
     openapi: options.openapi || {},
   };
 
+  // Internal function to generate the OpenAPI spec
+  const _generateSpec = (app: BklarInstance) => {
+    return generateOpenAPI(app, config.openapi);
+  };
+
   // The setup function to be called on the app instance
   const setup = (app: BklarInstance) => {
     // Generate the OpenAPI spec only once
-    const openApiSpec = generateOpenAPI(app, config.openapi);
+    const openApiSpec = _generateSpec(app);
 
     const jsonPath = `${config.path}/json`;
     const swaggerPath = `${config.path}/swagger`;
@@ -64,5 +69,5 @@ export function swagger(options: SwaggerOptions = {}) {
     );
   };
 
-  return { setup };
+  return { setup, _generateSpec };
 }
