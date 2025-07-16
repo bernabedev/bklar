@@ -3,7 +3,7 @@ import { jwt, sign } from "@bklarjs/jwt";
 import { rateLimit } from "@bklarjs/rate-limit";
 import { staticServer } from "@bklarjs/static";
 import { swagger } from "@bklarjs/swagger";
-import { Bklar } from "bklar";
+import { Bklar, InferContext } from "bklar";
 import { NotFoundError, UnauthorizedError } from "bklar/errors";
 import { z } from "zod";
 
@@ -102,9 +102,17 @@ app.get(
   }
 );
 
+const userSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  email: z.string(),
+});
+
+type UserContext = InferContext<{ body: typeof userSchema }>;
+
 app.get(
   "/users",
-  (ctx) => {
+  (ctx: UserContext) => {
     const users = UserService.getAll();
     return ctx.json(users);
   },
@@ -118,13 +126,7 @@ app.get(
           description: "A list of users.",
           content: {
             "application/json": {
-              schema: z.array(
-                z.object({
-                  id: z.number(),
-                  name: z.string(),
-                  email: z.string(),
-                })
-              ),
+              schema: z.array(userSchema),
             },
           },
         },

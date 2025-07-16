@@ -5,12 +5,12 @@
     "dev": "bun --watch src/index.ts"
   },
   "dependencies": {
-    "bklar": "workspace:*",
-    "@bklarjs/jwt": "workspace:*",
     "@bklarjs/cors": "workspace:*",
+    "@bklarjs/jwt": "workspace:*",
     "@bklarjs/rate-limit": "workspace:*",
-    "@bklarjs/swagger": "workspace:*",
     "@bklarjs/static": "workspace:*",
-    "zod": "^3.25.75"
+    "@bklarjs/swagger": "workspace:*",
+    "bklar": "workspace:*",
+    "zod": "^4.0.5"
   }
 }

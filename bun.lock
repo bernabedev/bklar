@@ -20,14 +20,14 @@
         "@bklarjs/static": "workspace:*",
         "@bklarjs/swagger": "workspace:*",
         "bklar": "workspace:*",
-        "zod": "^3.25.75",
+        "zod": "^4.0.5",
       },
     },
     "packages/bklar": {
       "name": "bklar",
       "version": "1.0.3",
       "dependencies": {
-        "zod": "^3.22.4",
+        "zod": "^4.0.0",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -42,7 +42,7 @@
         "bklar": "workspace:*",
       },
       "peerDependencies": {
-        "bklar": ">=0.1.0",
+        "bklar": ">=1.0.0",
       },
     },
     "packages/create-bklar": {
@@ -74,7 +74,7 @@
         "typescript": "^5.8.3",
       },
       "peerDependencies": {
-        "bklar": ">=0.1.0",
+        "bklar": ">=1.0.0",
       },
     },
     "packages/rate-limit": {
@@ -87,7 +87,7 @@
         "typescript": "^5.0.0",
       },
       "peerDependencies": {
-        "bklar": ">=0.1.0",
+        "bklar": ">=1.0.0",
       },
     },
     "packages/static": {
@@ -100,26 +100,25 @@
         "typescript": "^5.0.0",
       },
       "peerDependencies": {
-        "bklar": ">=0.1.0",
+        "bklar": ">=1.0.0",
       },
     },
     "packages/swagger": {
       "name": "@bklarjs/swagger",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "dependencies": {
         "swagger-ui-dist": "^5.26.2",
-        "zod-to-json-schema": "^3.24.6",
       },
       "devDependencies": {
         "@types/swagger-ui-dist": "^3.30.6",
         "bklar": "workspace:*",
         "openapi3-ts": "^4.5.0",
         "typescript": "^5",
-        "zod": "^3.23.0",
+        "zod": "^4.0.5",
       },
       "peerDependencies": {
         "bklar": ">=1.0.0",
-        "zod": "^3.23.0",
+        "zod": "^4.0.0",
       },
     },
   },
@@ -500,9 +499,7 @@
 
     "yoctocolors": ["yoctocolors@2.1.1", "", {}, "sha512-GQHQqAopRhwU8Kt1DDM8NjibDXHC8eoh1erhGAJPEyveY9qqVeXvVikNKrDz69sHowPMorbPUrH/mx8c50eiBQ=="],
 
-    "zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
-
-    "zod-to-json-schema": ["zod-to-json-schema@3.24.6", "", { "peerDependencies": { "zod": "^3.24.1" } }, "sha512-h/z3PKvcTcTetyjl1fkj79MHNEjm+HpD6NXheWjzOekY7kV+lwDYnHw+ivHkijnCSMz1yJaWBD9vu/Fcmk+vEg=="],
+    "zod": ["zod@4.0.5", "", {}, "sha512-/5UuuRPStvHXu7RS+gmvRf4NXrNxpSllGwDnCBcJZtQsKrviYXm54yDGV2KYNLT5kq0lHGcl7lqWJLgSaG+tgA=="],
 
     "@bklarjs/rate-limit/bunchee": ["bunchee@4.4.8", "", { "dependencies": { "@rollup/plugin-commonjs": "^25.0.7", "@rollup/plugin-json": "^6.1.0", "@rollup/plugin-node-resolve": "^15.2.3", "@rollup/plugin-replace": "^5.0.5", "@rollup/plugin-wasm": "^6.2.2", "@rollup/pluginutils": "^5.1.0", "@swc/core": "^1.3.106", "@swc/helpers": "^0.5.3", "arg": "^5.0.2", "clean-css": "^5.3.3", "magic-string": "^0.30.6", "pretty-bytes": "^5.6.0", "rimraf": "^5.0.5", "rollup": "^4.9.4", "rollup-plugin-dts": "^6.1.0", "rollup-plugin-swc3": "^0.11.0", "rollup-preserve-directives": "^1.1.1", "tslib": "^2.6.2" }, "peerDependencies": { "typescript": "^4.1 || ^5.0" }, "optionalPeers": ["typescript"], "bin": { "bunchee": "dist/bin/cli.js" } }, "sha512-YfGENthKSPF94+vJqnV51yDwTv5r6YZoBISJBe6ZeD167QL+iwgpMk2IaZzLgawJGCcoybOqII5sRchALWHhEw=="],
 

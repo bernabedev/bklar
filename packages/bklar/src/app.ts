@@ -7,6 +7,7 @@ import type {
   Hook,
   Middleware,
   ResponseHook,
+  Route,
   RouteOptions,
   Schemas,
 } from "./types";
@@ -160,6 +161,10 @@ export class BklarApp {
   onError(hook: ErrorHook) {
     this.hooks.onError.push(hook);
     return this;
+  }
+
+  public get routes(): Route<any>[] {
+    return this.router.getRoutes();
   }
 }
 

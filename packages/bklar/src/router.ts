@@ -304,4 +304,8 @@ export class Router {
 
     return response;
   }
+
+  public getRoutes(): Route<any>[] {
+    return this.routes;
+  }
 }
