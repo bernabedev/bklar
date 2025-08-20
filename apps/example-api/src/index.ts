@@ -110,36 +110,36 @@ const userSchema = z.object({
 
 type UserContext = InferContext<{ body: typeof userSchema }>;
 
-app.get(
-  "/users",
-  (ctx: UserContext) => {
+class UserController {
+  static getAll(ctx: UserContext) {
     const users = UserService.getAll();
     return ctx.json(users);
-  },
-  {
-    doc: {
-      tags: ["Users"],
-      description: "Get all users",
-      summary: "Get all users (public)",
-      responses: {
-        "200": {
-          description: "A list of users.",
-          content: {
-            "application/json": {
-              schema: z.array(userSchema),
-            },
+  }
+}
+
+app.get("/users", UserController.getAll, {
+  doc: {
+    tags: ["Users"],
+    description: "Get all users",
+    summary: "Get all users (public)",
+    responses: {
+      "200": {
+        description: "A list of users.",
+        content: {
+          "application/json": {
+            schema: z.array(userSchema),
           },
         },
       },
     },
-    schemas: {
-      query: z.object({
-        page: z.coerce.number().default(1),
-        limit: z.coerce.number().default(10),
-      }),
-    },
-  }
-);
+  },
+  schemas: {
+    query: z.object({
+      page: z.coerce.number().default(1),
+      limit: z.coerce.number().default(10),
+    }),
+  },
+});
 
 app.get(
   "/users/:id",
