@@ -45,7 +45,7 @@ Then, apply the middleware globally in your `index.ts`. It's important to add it
 
 ```typescript
 import { Bklar } from "bklar";
-import { Bklar as serveStatic } from "@bklarjs/static";
+import { serveStatic } from "@bklarjs/static";
 
 const app = Bklar();
 

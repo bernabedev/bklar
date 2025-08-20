@@ -84,7 +84,7 @@ After all your routes have been defined, call the `setup()` function from the sw
 
 ```typescript
 import { Bklar } from "bklar";
-import { Bklar as swagger } from "@bklarjs/swagger";
+import { swagger } from "@bklarjs/swagger";
 // ... your other imports and route definitions
 
 const app = Bklar();

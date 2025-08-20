@@ -29,7 +29,7 @@ The most common use case is to apply the rate-limiter globally to all requests.
 
 ```typescript
 import { Bklar } from "bklar";
-import { Bklar as rateLimit } from "@bklarjs/rate-limit";
+import { rateLimit } from "@bklarjs/rate-limit";
 
 const app = Bklar();
 
@@ -57,7 +57,7 @@ You can also apply different rate limits to specific routes or groups.
 
 ```typescript
 import { Bklar } from "bklar";
-import { Bklar as rateLimit } from "@bklarjs/rate-limit";
+import { rateLimit } from "@bklarjs/rate-limit";
 
 const app = Bklar();
 
@@ -92,7 +92,7 @@ app.post(
 Rate-limit based on a user ID from a JWT payload.
 
 ```typescript
-import { Bklar as rateLimit } from "@bklarjs/rate-limit";
+import { rateLimit } from "@bklarjs/rate-limit";
 import { jwt } from "@bklarjs/jwt";
 
 // Assume authMiddleware populates ctx.state.jwt
