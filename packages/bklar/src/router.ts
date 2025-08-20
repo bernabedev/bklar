@@ -1,20 +1,20 @@
 import { Context } from "./context";
 import {
-  defaultErrorHandler,
-  ErrorType,
-  HttpError,
-  NotFoundError,
+    defaultErrorHandler,
+    ErrorType,
+    HttpError,
+    NotFoundError,
 } from "./errors";
 import type {
-  ErrorHandler,
-  ErrorHook,
-  Handler,
-  Hook,
-  Middleware,
-  ResponseHook,
-  Route,
-  RouteOptions,
-  Schemas,
+    ErrorHandler,
+    ErrorHook,
+    Handler,
+    Hook,
+    Middleware,
+    ResponseHook,
+    Route,
+    RouteOptions,
+    Schemas,
 } from "./types";
 import { ValidationError } from "./types";
 
@@ -118,6 +118,21 @@ export class Router {
       ];
     }
 
+    return this;
+  }
+
+  plug(subApp: { routes: Route<any>[] }) {
+    for (const route of subApp.routes) {
+      const clonedRoute: Route<any> = {
+        ...route,
+        segments: [...route.segments],
+        options: {
+          ...route.options,
+          middlewares: [...(route.options.middlewares || [])],
+        },
+      };
+      this.routes.push(clonedRoute);
+    }
     return this;
   }
 

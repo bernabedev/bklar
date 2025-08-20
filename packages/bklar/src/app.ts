@@ -1,15 +1,15 @@
 import { type Server } from "bun";
 import { Router } from "./router";
 import type {
-  BklarOptions,
-  ErrorHook,
-  Handler,
-  Hook,
-  Middleware,
-  ResponseHook,
-  Route,
-  RouteOptions,
-  Schemas,
+    BklarOptions,
+    ErrorHook,
+    Handler,
+    Hook,
+    Middleware,
+    ResponseHook,
+    Route,
+    RouteOptions,
+    Schemas,
 } from "./types";
 import { defaultLogger } from "./utils/logger";
 
@@ -92,6 +92,11 @@ export class BklarApp {
     middlewares: Middleware[] = []
   ) {
     this.router.group(prefix, builder, middlewares);
+    return this;
+  }
+
+  plug(subApp: { routes: Route<any>[] }) {
+    this.router.plug(subApp);
     return this;
   }
 
