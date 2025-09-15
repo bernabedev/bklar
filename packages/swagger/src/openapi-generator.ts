@@ -6,6 +6,20 @@ import type {
 } from "openapi3-ts/oas31";
 import { z } from "zod/v4";
 
+const toJSONSchemaOptions = {
+  unrepresentable: "any" as const,
+  override: (ctx: any) => {
+    // Check if the current node in the schema tree is a ZodDate.
+    if (ctx.zodSchema instanceof z.ZodDate) {
+      ctx.jsonSchema.type = "string";
+      ctx.jsonSchema.format = "date-time";
+      ctx.jsonSchema.description =
+        ctx.zodSchema.description ??
+        "Date in ISO 8601 format (e.g., 2024-01-01T00:00:00.000Z)";
+    }
+  },
+};
+
 function createSchemaName(
   path: string,
   method: string,
@@ -69,7 +83,10 @@ export function generateOpenAPI(
 
     // --- Process Parameters using z.toJSONSchema ---
     if (route.options.schemas?.params) {
-      const jsonSchema = z.toJSONSchema(route.options.schemas.params);
+      const jsonSchema = z.toJSONSchema(
+        route.options.schemas.params,
+        toJSONSchemaOptions
+      );
       if (jsonSchema.type === "object" && jsonSchema.properties) {
         for (const [key, prop] of Object.entries(jsonSchema.properties)) {
           operation.parameters.push({
@@ -82,7 +99,10 @@ export function generateOpenAPI(
       }
     }
     if (route.options.schemas?.query) {
-      const jsonSchema = z.toJSONSchema(route.options.schemas.query);
+      const jsonSchema = z.toJSONSchema(
+        route.options.schemas.query,
+        toJSONSchemaOptions
+      );
       if (jsonSchema.type === "object" && jsonSchema.properties) {
         for (const [key, prop] of Object.entries(jsonSchema.properties)) {
           operation.parameters.push({
@@ -99,7 +119,8 @@ export function generateOpenAPI(
     if (route.options.schemas?.body) {
       const schemaName = createSchemaName(path, method, "Body");
       const jsonSchema = z.toJSONSchema(
-        route.options.schemas.body
+        route.options.schemas.body,
+        toJSONSchemaOptions
       ) as SchemaObject;
       openApi.components!.schemas![schemaName] = jsonSchema;
       operation.requestBody = {
@@ -130,7 +151,10 @@ export function generateOpenAPI(
           "Response",
           statusCode
         );
-        const jsonSchema = z.toJSONSchema(schemaOrZod) as SchemaObject;
+        const jsonSchema = z.toJSONSchema(
+          schemaOrZod,
+          toJSONSchemaOptions
+        ) as SchemaObject;
         openApi.components!.schemas![schemaName] = jsonSchema;
 
         processedResponses[statusCode] = {

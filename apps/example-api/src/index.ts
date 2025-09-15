@@ -106,6 +106,7 @@ const userSchema = z.object({
   id: z.number(),
   name: z.string(),
   email: z.string(),
+  createdAt: z.date(),
 });
 
 type UserContext = InferContext<{ body: typeof userSchema }>;
@@ -159,6 +160,7 @@ app.get(
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
+  date: z.date(),
 });
 
 app.post(
