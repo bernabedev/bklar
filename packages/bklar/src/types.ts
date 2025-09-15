@@ -35,6 +35,13 @@ export interface RouteDoc {
       };
     };
   };
+  /**
+   * Defines the security requirements for a specific operation.
+   * An empty array `[]` indicates the endpoint is public, overriding any global security.
+   * Example: `[{ bearerAuth: [] }]`
+   * @see https://swagger.io/specification/#security-requirement-object
+   */
+  security?: Array<Record<string, string[]>>;
 }
 
 export interface RouteOptions<S extends Schemas> {

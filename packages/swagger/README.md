@@ -16,6 +16,7 @@ This package automatically generates an `openapi.json` specification by inspecti
 - 🎨 **Beautiful UIs Included:** Serves two popular and interactive API documentation UIs out of the box:
   - **Swagger UI:** The industry standard, highly recognized documentation interface.
   - **Scalar:** A modern, clean, and beautifully designed alternative.
+- 🔐 **Authentication Support:** Easily add Bearer (JWT) authentication to your documentation with a single flag.
 - 🧩 **Simple Integration:** Set up your entire API documentation with just a few lines of code.
 - 🛡️ **Full TypeScript Support:** Strongly-typed options for a superior development experience.
 
@@ -94,6 +95,7 @@ const app = Bklar();
 // Setup Swagger after all routes are defined
 swagger({
   path: "/documentation", // The base path for your documentation
+  bearerAuth: true, // Enable global Bearer authentication
   openapi: {
     title: "My Awesome API",
     version: "1.2.0",
@@ -104,6 +106,8 @@ swagger({
 app.listen(3000);
 ```
 
+Enabling `bearerAuth: true` will add an "Authorize" button to the Swagger UI, allowing you to test protected endpoints.
+
 ### 3. Access Your Documentation
 
 Now, start your server (`bun run dev`) and visit the following endpoints in your browser:
@@ -112,12 +116,67 @@ Now, start your server (`bun run dev`) and visit the following endpoints in your
 - **`http://localhost:3000/documentation/scalar`** - View the Scalar UI.
 - **`http://localhost:3000/documentation/json`** - View the raw `openapi.json` specification.
 
+## 🔐 Adding Authentication
+
+You can secure your endpoints in two ways:
+
+### Global Authentication
+
+Set `bearerAuth: true` in the main `swagger` configuration. This applies Bearer (JWT) authentication to all endpoints by default.
+
+```ts
+swagger({
+  bearerAuth: true,
+  openapi: {
+    title: "My Secure API",
+  },
+}).setup(app);
+```
+
+### Per-Endpoint Authentication
+
+You can specify security requirements for individual routes within the `doc` object. This is useful for public endpoints in an otherwise protected API, or for routes that use different security schemes.
+
+To mark a specific endpoint as protected, add the `security` property:
+
+```ts
+app.get(
+  "/profile",
+  (ctx) => {
+    /* ... */
+  },
+  {
+    doc: {
+      summary: "Get the current user's profile",
+      tags: ["Users"],
+      security: [{ bearerAuth: [] }], // This endpoint requires bearer auth
+      responses: {
+        /* ... */
+      },
+    },
+  }
+);
+```
+
+To make an endpoint public when global authentication is enabled, use an empty array for `security`:
+
+```ts
+app.get("/health", (ctx) => ctx.json({ status: "ok" }), {
+  doc: {
+    summary: "Health check endpoint",
+    tags: ["System"],
+    security: [], // This endpoint is public
+  },
+});
+```
+
 ## ⚙️ Configuration Options
 
 The `swagger()` factory accepts an options object:
 
 - `path`: The base path under which the documentation will be served. Defaults to `/docs`.
-- `openapi`: An object to configure the `info` section of your OpenAPI specification.
+- `bearerAuth`: A boolean to enable global Bearer (JWT) authentication support in the UI. Defaults to `false`.
+- `openapi`: An object to configure the `info`, `components`, and `security` sections of your OpenAPI specification.
   - `title`: The title of your API. Defaults to `"bklar API"`.
   - `version`: The version of your API. Defaults to `"1.0.0"`.
   - `description`: A short description of your API.
@@ -128,8 +187,9 @@ The `doc` object you add to your routes can contain the following standard OpenA
 
 - `summary`: A short summary of what the operation does.
 - `description`: A verbose explanation of the operation behavior.
-  -- `tags`: An array of strings used for grouping operations in the UI (e.g., `['Users', 'Authentication']`).
+- `tags`: An array of strings used for grouping operations in the UI (e.g., `['Users', 'Authentication']`).
 - `responses`: An object describing the possible responses from the operation.
+- `security`: An array defining the security requirements for this specific operation.
 - ...and other valid OpenAPI operation fields.
 
 ## 🤝 Contributing

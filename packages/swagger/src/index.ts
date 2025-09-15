@@ -1,14 +1,26 @@
 import type { BklarInstance } from "bklar";
+import type {
+  ComponentsObject,
+  SecurityRequirementObject,
+} from "openapi3-ts/oas31";
 import { getAbsoluteFSPath } from "swagger-ui-dist";
 import { generateOpenAPI } from "./openapi-generator";
 import { getScalarHTML, getSwaggerHTML } from "./ui";
 
 export interface SwaggerOptions {
   path?: string;
+  /**
+   * Add global bearer authentication to the API documentation.
+   * This will add a global "Authorize" button to the UI.
+   * @default false
+   */
+  bearerAuth?: boolean;
   openapi?: {
     title?: string;
     version?: string;
     description?: string;
+    components?: ComponentsObject;
+    security?: SecurityRequirementObject[];
   };
 }
 
@@ -17,6 +29,29 @@ export function swagger(options: SwaggerOptions = {}) {
     path: options.path || "/docs",
     openapi: options.openapi || {},
   };
+
+  // If bearerAuth is enabled, set up the security scheme and global security
+  if (options.bearerAuth) {
+    if (!config.openapi.components) {
+      config.openapi.components = {};
+    }
+    if (!config.openapi.components.securitySchemes) {
+      config.openapi.components.securitySchemes = {};
+    }
+    // Define the bearerAuth security scheme
+    config.openapi.components.securitySchemes.bearerAuth = {
+      type: "http",
+      scheme: "bearer",
+      bearerFormat: "JWT",
+      description: "Enter your JWT in the format: Bearer <token>",
+    };
+
+    // Apply bearerAuth security globally
+    if (!config.openapi.security) {
+      config.openapi.security = [];
+    }
+    config.openapi.security.push({ bearerAuth: [] });
+  }
 
   // Internal function to generate the OpenAPI spec
   const _generateSpec = (app: BklarInstance) => {
