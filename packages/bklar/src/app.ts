@@ -36,8 +36,8 @@ export class BklarApp {
     });
   }
 
-  use(hook: Hook) {
-    this.hooks.onRequest.push(hook);
+  use(middleware: Middleware) {
+    this.router.use(middleware);
     return this;
   }
 

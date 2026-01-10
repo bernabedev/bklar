@@ -19,7 +19,12 @@ export type Handler<S extends Schemas = {}> = (
   ctx: InferContext<S>
 ) => Response | Promise<Response>;
 
-export type Middleware = Hook;
+export type Next = () => Promise<Response>;
+
+export type Middleware = (
+  ctx: Context<any>,
+  next: Next
+) => Promise<Response>;
 
 export interface RouteDoc {
   summary?: string;
@@ -46,7 +51,7 @@ export interface RouteDoc {
 
 export interface RouteOptions<S extends Schemas> {
   schemas?: S;
-  middlewares?: Hook[];
+  middlewares?: Middleware[];
   doc?: RouteDoc;
 }
 

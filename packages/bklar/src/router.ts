@@ -1,22 +1,23 @@
 import { Context } from "./context";
 import {
-    defaultErrorHandler,
-    ErrorType,
-    HttpError,
-    NotFoundError,
+  defaultErrorHandler,
+  ErrorType,
+  HttpError,
+  NotFoundError,
 } from "./errors";
 import type {
-    ErrorHandler,
-    ErrorHook,
-    Handler,
-    Hook,
-    Middleware,
-    ResponseHook,
-    Route,
-    RouteOptions,
-    Schemas,
+  ErrorHandler,
+  ErrorHook,
+  Handler,
+  Hook,
+  Middleware,
+  ResponseHook,
+  Route,
+  RouteOptions,
+  Schemas,
 } from "./types";
 import { ValidationError } from "./types";
+import { compose } from "./utils/compose";
 
 interface RouterOptions {
   errorHandler?: ErrorHandler;
@@ -136,18 +137,6 @@ export class Router {
     return this;
   }
 
-  private async executeMiddlewares(
-    ctx: Context<any>,
-    middlewares: Middleware[]
-  ): Promise<Response | void> {
-    for (const mw of middlewares) {
-      const result = await mw(ctx);
-      if (result instanceof Response) {
-        return result;
-      }
-    }
-  }
-
   private async executeHooks(
     ctx: Context<any>,
     hooks: Hook[]
@@ -233,34 +222,36 @@ export class Router {
 
       ctx.params = params;
 
-      // Execute route-specific middlewares (which are also hooks)
-      if (route.options.middlewares) {
-        const shortCircuitResponse = await this.executeHooks(
-          ctx,
-          route.options.middlewares
-        );
-        if (shortCircuitResponse) return shortCircuitResponse;
-      }
+      // Wrap the final handler logic into a middleware function
+      const routeHandler: Middleware = async (ctx) => {
+        // --- preValidation Hook ---
+        const scVal = await this.executeHooks(ctx, this.hooks.preValidation);
+        if (scVal instanceof Response) return scVal;
 
-      // --- preValidation Hook ---
-      let shortCircuitResponse = await this.executeHooks(
-        ctx,
-        this.hooks.preValidation
-      );
-      if (shortCircuitResponse) return shortCircuitResponse;
+        if (route.options.schemas) {
+          await this.validate(ctx, route.options.schemas);
+        }
 
-      if (route.options.schemas) {
-        await this.validate(ctx, route.options.schemas);
-      }
+        // --- preHandler Hook ---
+        const scHandler = await this.executeHooks(ctx, this.hooks.preHandler);
+        if (scHandler instanceof Response) return scHandler;
 
-      // --- preHandler Hook ---
-      shortCircuitResponse = await this.executeHooks(
-        ctx,
-        this.hooks.preHandler
-      );
-      if (shortCircuitResponse) return shortCircuitResponse;
+        const res = await route.handler(ctx);
+        if (res instanceof Response) return res;
+        // Should not happen if handler is strictly typed to return Response | Promise<Response>,
+        // but Typescript allows void return in some Handler definitions if not strict.
+        // Assuming strict compliance or framework default.
+        // If it's undefined, we should probably throw or return 200 OK empty?
+        // Let's assume the handler MUST return a Response.
+        return res as Response; 
+      };
 
-      return await route.handler(ctx);
+      // Compose route-specific middlewares and the handler
+      const stack = route.options.middlewares || [];
+      const fn = compose(stack);
+      
+      // Execute route stack, with the handler as the final "next"
+      return fn(ctx, () => routeHandler(ctx, async () => new Response("")));
     }
 
     throw new NotFoundError();
@@ -284,7 +275,12 @@ export class Router {
 
       ctx.query = Object.fromEntries(new URL(req.url).searchParams.entries());
 
-      response = await this._findAndExecuteRoute(ctx);
+      // Compose Global Middlewares
+      // The "next" after global middlewares is the route matching logic
+      const dispatch = compose(this.globalMiddlewares);
+      
+      response = await dispatch(ctx, () => this._findAndExecuteRoute(ctx));
+
     } catch (error) {
       // --- onError Hook ---
       await this.executeErrorHooks(ctx, error, this.hooks.onError);
