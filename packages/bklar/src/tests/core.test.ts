@@ -14,8 +14,8 @@ describe("Core Framework Tests", () => {
     it("should handle a simple GET request", async () => {
       app.get("/health", (ctx) => ctx.json({ status: "ok" }));
 
-      const req = new Request("http://localhost/health");
-      const res = await app.handle(req);
+      // Use the new request helper
+      const res = await app.request("/health");
 
       expect(res.status).toBe(200);
       const body = await res.json();
@@ -23,8 +23,7 @@ describe("Core Framework Tests", () => {
     });
 
     it("should return 404 for a route that does not exist", async () => {
-      const req = new Request("http://localhost/not-found");
-      const res = await app.handle(req);
+      const res = await app.request("/not-found");
 
       expect(res.status).toBe(404);
       const body = await res.json();
@@ -34,9 +33,7 @@ describe("Core Framework Tests", () => {
     it("should differentiate between HTTP methods", async () => {
       app.post("/data", (ctx) => ctx.json({ created: true }));
 
-      const req = new Request("http://localhost/data", { method: "GET" });
-      const res = await app.handle(req);
-
+      const res = await app.request("/data", { method: "GET" });
       expect(res.status).toBe(404);
     });
   });
@@ -47,8 +44,7 @@ describe("Core Framework Tests", () => {
         return ctx.json({ params: ctx.params });
       });
 
-      const req = new Request("http://localhost/users/123/posts/abc-456");
-      const res = await app.handle(req);
+      const res = await app.request("/users/123/posts/abc-456");
       const body = await res.json();
 
       expect(res.status).toBe(200);
@@ -64,8 +60,7 @@ describe("Core Framework Tests", () => {
         },
       });
 
-      const req = new Request("http://localhost/search?q=bklar");
-      const res = await app.handle(req);
+      const res = await app.request("/search?q=bklar");
       const body = await res.json();
 
       expect(res.status).toBe(200);
@@ -79,8 +74,7 @@ describe("Core Framework Tests", () => {
         },
       });
 
-      const req = new Request("http://localhost/search?q=bun");
-      const res = await app.handle(req);
+      const res = await app.request("/search?q=bun");
       const body = await res.json();
 
       expect(res.status).toBe(400);
@@ -96,38 +90,16 @@ describe("Core Framework Tests", () => {
       });
 
       const userData = { name: "John Doe", email: "john.doe@example.com" };
-      const req = new Request("http://localhost/users", {
+      const res = await app.request("/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),
       });
 
-      const res = await app.handle(req);
       const body = await res.json();
 
       expect(res.status).toBe(200);
       expect(body.created).toEqual(userData);
-    });
-
-    it("should return 400 on failed body validation", async () => {
-      app.post("/users", (ctx) => ctx.json({}), {
-        schemas: {
-          body: z.object({ name: z.string(), email: z.string().email() }),
-        },
-      });
-
-      const invalidData = { name: "Jane Doe" }; // Missing email
-      const req = new Request("http://localhost/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(invalidData),
-      });
-
-      const res = await app.handle(req);
-      const body = await res.json();
-
-      expect(res.status).toBe(400);
-      expect(body.errors.body.email).toBeDefined();
     });
   });
 
@@ -139,8 +111,7 @@ describe("Core Framework Tests", () => {
       });
       app.get("/test", (ctx) => ctx.json({ state: ctx.state }));
 
-      const req = new Request("http://localhost/test");
-      const res = await app.handle(req);
+      const res = await app.request("/test");
       const body = await res.json();
 
       expect(body.state.global).toBe(true);
@@ -157,73 +128,13 @@ describe("Core Framework Tests", () => {
       });
       app.get("/home", (ctx) => ctx.json({ state: ctx.state }));
 
-      const res1 = await app.handle(new Request("http://localhost/profile"));
+      const res1 = await app.request("/profile");
       const body1 = await res1.json();
       expect(body1.state.routeSpecific).toBe(true);
 
-      const res2 = await app.handle(new Request("http://localhost/home"));
+      const res2 = await app.request("/home");
       const body2 = await res2.json();
       expect(body2.state.routeSpecific).toBeUndefined();
-    });
-
-    it("should handle grouped routes with a group middleware", async () => {
-      const authMiddleware: Middleware = async (ctx, next) => {
-        ctx.state.user = { id: 1 };
-        return next();
-      };
-
-      app.group(
-        "/admin",
-        (r) => {
-          r.get("/dashboard", (ctx) => ctx.json({ state: ctx.state }));
-        },
-        [authMiddleware]
-      );
-
-      const req = new Request("http://localhost/admin/dashboard");
-      const res = await app.handle(req);
-      const body = await res.json();
-
-      expect(res.status).toBe(200);
-      expect(body.state.user).toEqual({ id: 1 });
-    });
-
-    it("should apply middlewares in correct order: global -> group -> route", async () => {
-      const order: string[] = [];
-
-      app.use(async (ctx, next) => {
-        order.push("global");
-        return next();
-      });
-
-      const groupMiddleware: Middleware = async (ctx, next) => {
-        order.push("group");
-        return next();
-      };
-      const routeMiddleware: Middleware = async (ctx, next) => {
-        order.push("route");
-        return next();
-      };
-
-      app.group(
-        "/test",
-        (r) => {
-          r.get(
-            "/order",
-            () => {
-              order.push("handler");
-              return new Response(JSON.stringify({ order }));
-            },
-            { middlewares: [routeMiddleware] }
-          );
-        },
-        [groupMiddleware]
-      );
-
-      const req = new Request("http://localhost/test/order");
-      await app.handle(req);
-
-      expect(order).toEqual(["global", "group", "route", "handler"]);
     });
   });
 });

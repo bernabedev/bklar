@@ -1,18 +1,20 @@
-import type { z } from "zod";
 import type { Context } from "./context";
+import type { ValidatorAdapter } from "./validator";
 
-export type AnyZodObject = z.ZodObject<any, any, any, any, any>;
+// Generic Inference Helper
+// Supports Zod (via _output) and others can be added or default to any
+export type Infer<T> = T extends { _output: infer O } ? O : any;
 
-export interface Schemas {
-  query?: AnyZodObject;
-  params?: AnyZodObject;
-  body?: AnyZodObject;
+export interface Schemas<T = any> {
+  query?: T;
+  params?: T;
+  body?: T;
 }
 
 export type InferContext<S extends Schemas> = Context<{
-  query: S["query"] extends AnyZodObject ? z.infer<S["query"]> : never;
-  params: S["params"] extends AnyZodObject ? z.infer<S["params"]> : never;
-  body: S["body"] extends AnyZodObject ? z.infer<S["body"]> : never;
+  query: S["query"] extends undefined ? never : Infer<S["query"]>;
+  params: S["params"] extends undefined ? never : Infer<S["params"]>;
+  body: S["body"] extends undefined ? never : Infer<S["body"]>;
 }>;
 
 // Handler can return Response or any JSON-serializable data
@@ -54,13 +56,14 @@ export type ErrorHandler = (
 export interface BklarOptions {
   logger?: boolean | Logger;
   errorHandler?: ErrorHandler;
+  validator?: ValidatorAdapter;
 }
 
 export interface State {}
 
 // Helper types for Client RPC
 export type InferInput<S extends Schemas> = {
-    query: S["query"] extends AnyZodObject ? z.infer<S["query"]> : never;
-    params: S["params"] extends AnyZodObject ? z.infer<S["params"]> : never;
-    body: S["body"] extends AnyZodObject ? z.infer<S["body"]> : never;
+    query: S["query"] extends undefined ? never : Infer<S["query"]>;
+    params: S["params"] extends undefined ? never : Infer<S["params"]>;
+    body: S["body"] extends undefined ? never : Infer<S["body"]>;
 };

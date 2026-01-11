@@ -18,6 +18,7 @@ import {
   NotFoundError,
 } from "./errors";
 import { defaultLogger } from "./utils/logger";
+import { defaultValidator, type ValidatorAdapter } from "./validator";
 
 // Define the structure for route types
 export type RouteType<
@@ -27,7 +28,7 @@ export type RouteType<
 > = {
   [M in Method]: {
     input: InferInput<S>;
-    output: ReturnType extends Response ? any : ReturnType; // If Response, we can't infer much, otherwise it's the JSON type
+    output: ReturnType extends Response ? any : ReturnType;
   };
 };
 
@@ -35,6 +36,7 @@ export class BklarApp<Routes = {}> {
   public readonly router: Router;
   public readonly options: BklarOptions;
   private globalMiddlewares: Middleware[] = [];
+  private validator: ValidatorAdapter;
 
   constructor(options: BklarOptions = {}) {
     this.options = {
@@ -42,6 +44,7 @@ export class BklarApp<Routes = {}> {
       errorHandler: options.errorHandler || defaultErrorHandler,
       ...options,
     };
+    this.validator = options.validator || defaultValidator;
     this.router = new Router();
   }
 
@@ -87,14 +90,6 @@ export class BklarApp<Routes = {}> {
       if (typeof res === "string") {
          return ctx.text(res);
       }
-      // If void/undefined, we expect the handler to have handled the response manually or it's a mistake.
-      // But for type safety, we usually expect a return.
-      // If it is absolutely void/null, send 200 OK empty? 
-      // Current behavior: return undefined, caught by final handler -> 500 or 404
-      // Let's assume user must return something or use ctx methods.
-      // If they used ctx.json(), that returns a Response, so we are good.
-      // If they just return { data: 1 }, we caught it above.
-      
       return res;
     });
 
@@ -158,13 +153,6 @@ export class BklarApp<Routes = {}> {
     builder: (app: BklarApp<any>) => void,
     middlewares: Middleware[] = []
   ) {
-    // Note: TypeScript inference for groups is extremely hard to propagate cleanly 
-    // without complex recursive types. For this v2 prototype, we will accept that
-    // routes inside a group might need manual type casting or the builder pattern
-    // limits inference scope.
-    // HOWEVER, we can try to make it work by having the builder return the modified app.
-    // For now, we keep the runtime logic. Ideally, builder would take `app` and return `app`.
-    
     const proxy = new Proxy(this, {
       get: (target, prop, receiver) => {
         if (
@@ -211,21 +199,25 @@ export class BklarApp<Routes = {}> {
     return async (ctx, next) => {
       await ctx.parseBody();
 
-      const results = {
-        query: schemas.query?.safeParse(ctx.query),
-        params: schemas.params?.safeParse(ctx.params),
-        body: schemas.body?.safeParse(ctx.body),
+      const inputs = {
+        query: { schema: schemas.query, data: ctx.query },
+        params: { schema: schemas.params, data: ctx.params },
+        body: { schema: schemas.body, data: ctx.body },
       };
 
       const errors: Record<string, any> = {};
       let hasError = false;
 
-      for (const [key, result] of Object.entries(results)) {
-        if (result && !result.success) {
-          hasError = true;
-          errors[key] = result.error.flatten().fieldErrors;
-        } else if (result?.success) {
-          (ctx as any)[key] = result.data;
+      for (const [key, { schema, data }] of Object.entries(inputs)) {
+        if (!schema) continue;
+        
+        const result = await Promise.resolve(this.validator.validate(schema, data));
+        
+        if (!result.success) {
+           hasError = true;
+           errors[key] = result.error;
+        } else {
+           (ctx as any)[key] = result.data;
         }
       }
 
@@ -235,6 +227,13 @@ export class BklarApp<Routes = {}> {
 
       return next();
     };
+  }
+
+  // Testing helper
+  async request(path: string, options: RequestInit = {}): Promise<Response> {
+      const url = new URL(path, "http://localhost");
+      const req = new Request(url, options);
+      return this.handle(req);
   }
 
   async handle(req: Request): Promise<Response> {
@@ -261,8 +260,6 @@ export class BklarApp<Routes = {}> {
     try {
       const res = await dispatch(ctx);
       if (res instanceof Response) return res;
-      // Handle the case where the chain finishes but no response was returned
-      // (e.g. middleware didn't return, or handler returned undefined)
        return new Response("Internal Server Error", { status: 500 });
     } catch (error) {
        if (error instanceof ValidationError) {
