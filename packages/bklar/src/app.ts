@@ -21,11 +21,7 @@ import { defaultLogger } from "./utils/logger";
 import { defaultValidator, type ValidatorAdapter } from "./validator";
 
 // Define the structure for route types
-export type RouteType<
-  Method extends string,
-  S extends Schemas,
-  ReturnType
-> = {
+export type RouteType<Method extends string, S extends Schemas, ReturnType> = {
   [M in Method]: {
     input: InferInput<S>;
     output: ReturnType extends Response ? any : ReturnType;
@@ -67,7 +63,7 @@ export class BklarApp<Routes = {}> {
 
     // 1. Route specific middlewares from options
     if (options.middlewares) {
-        stack.push(...options.middlewares);
+      stack.push(...options.middlewares);
     }
 
     // 2. Validation Middleware
@@ -78,17 +74,17 @@ export class BklarApp<Routes = {}> {
     // 3. Handler Wrapper with Response Auto-Wrapping
     stack.push(async (ctx, next) => {
       const res = await handler(ctx as any);
-      
+
       if (res instanceof Response) {
         return res;
       }
-      
+
       // Auto-wrap JSON/Strings
       if (typeof res === "object" || Array.isArray(res)) {
-         return ctx.json(res);
+        return ctx.json(res);
       }
       if (typeof res === "string") {
-         return ctx.text(res);
+        return ctx.text(res);
       }
       return res;
     });
@@ -97,10 +93,14 @@ export class BklarApp<Routes = {}> {
   }
 
   // Type helper to Merge Routes
-  private _ret<Method extends string, Path extends string, S extends Schemas, Ret>(
-     // phantom params for inference
-  ): BklarApp<Routes & { [K in Path]: RouteType<Method, S, Ret> }> {
-      return this as any;
+  private _ret<
+    Method extends string,
+    Path extends string,
+    S extends Schemas,
+    Ret
+  >(): // phantom params for inference
+  BklarApp<Routes & { [K in Path]: RouteType<Method, S, Ret> }> {
+    return this as any;
   }
 
   get<S extends Schemas, Ret>(
@@ -210,14 +210,16 @@ export class BklarApp<Routes = {}> {
 
       for (const [key, { schema, data }] of Object.entries(inputs)) {
         if (!schema) continue;
-        
-        const result = await Promise.resolve(this.validator.validate(schema, data));
-        
+
+        const result = await Promise.resolve(
+          this.validator.validate(schema, data)
+        );
+
         if (!result.success) {
-           hasError = true;
-           errors[key] = result.error;
+          hasError = true;
+          errors[key] = result.error;
         } else {
-           (ctx as any)[key] = result.data;
+          (ctx as any)[key] = result.data;
         }
       }
 
@@ -231,9 +233,9 @@ export class BklarApp<Routes = {}> {
 
   // Testing helper
   async request(path: string, options: RequestInit = {}): Promise<Response> {
-      const url = new URL(path, "http://localhost");
-      const req = new Request(url, options);
-      return this.handle(req);
+    const url = new URL(path, "http://localhost");
+    const req = new Request(url, options);
+    return this.handle(req);
   }
 
   async handle(req: Request): Promise<Response> {
@@ -243,15 +245,17 @@ export class BklarApp<Routes = {}> {
 
     // 1. Match Route
     const match = this.router.find(req.method, url.pathname);
-    
+
     // 2. Build Chain
     const chain = [...this.globalMiddlewares];
-    
+
     if (match) {
-        ctx.params = match.params;
-        chain.push(...match.handlers);
+      ctx.params = match.params;
+      chain.push(...match.handlers);
     } else {
-        chain.push(() => { throw new NotFoundError(); });
+      chain.push(() => {
+        throw new NotFoundError();
+      });
     }
 
     const dispatch = compose(chain);
@@ -260,9 +264,9 @@ export class BklarApp<Routes = {}> {
     try {
       const res = await dispatch(ctx);
       if (res instanceof Response) return res;
-       return new Response("Internal Server Error", { status: 500 });
+      return new Response("Internal Server Error", { status: 500 });
     } catch (error) {
-       if (error instanceof ValidationError) {
+      if (error instanceof ValidationError) {
         const validationError = new HttpError(
           ErrorType.VALIDATION,
           "Validation Error",
@@ -285,13 +289,13 @@ export class BklarApp<Routes = {}> {
       port: Number(port),
       fetch: async (req, server) => {
         const start = performance.now();
-        
+
         // IP logic
         const ip =
-           req.headers.get("x-forwarded-for")?.split(",")[0] ||
-           server.requestIP(req)?.address;
+          req.headers.get("x-forwarded-for")?.split(",")[0] ||
+          server.requestIP(req)?.address;
         if (ip) {
-            req.headers.set("X-Client-IP", ip);
+          req.headers.set("X-Client-IP", ip);
         }
 
         const res = await this.handle(req);
@@ -320,6 +324,8 @@ export class BklarApp<Routes = {}> {
 export function Bklar(options?: BklarOptions) {
   return new BklarApp(options);
 }
+
+export type BklarInstance = BklarApp<any>;
 
 // Export for Type Inference
 export type InferRoutes<T> = T extends BklarApp<infer R> ? R : never;
