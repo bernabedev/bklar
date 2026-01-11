@@ -1,15 +1,24 @@
 import { RadixNode } from "./router/node";
-import type { Middleware } from "./types";
+import type { Middleware, RouteOptions } from "./types";
 
 export interface MatchResult {
   handlers: Middleware[];
   params: Record<string, string>;
 }
 
+export interface RouteInfo {
+  method: string;
+  path: string;
+  options: RouteOptions<any>;
+}
+
 export class Router {
   root: RadixNode = new RadixNode();
+  private routes: RouteInfo[] = [];
 
-  add(method: string, path: string, middlewares: Middleware[]) {
+  add(method: string, path: string, middlewares: Middleware[], options: RouteOptions<any> = {}) {
+    this.routes.push({ method, path, options });
+    
     const segments = path.split("/").filter(Boolean);
     let currentNode = this.root;
 
@@ -103,5 +112,9 @@ export class Router {
     }
 
     return null;
+  }
+
+  getRoutes(): RouteInfo[] {
+    return this.routes;
   }
 }

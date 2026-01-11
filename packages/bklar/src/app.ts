@@ -36,7 +36,7 @@ export class BklarApp<Routes = {}> {
   public readonly router: Router;
   public readonly options: BklarOptions;
   private globalMiddlewares: Middleware[] = [];
-  private validator: ValidatorAdapter;
+  public readonly validator: ValidatorAdapter;
 
   constructor(options: BklarOptions = {}) {
     this.options = {
@@ -93,7 +93,7 @@ export class BklarApp<Routes = {}> {
       return res;
     });
 
-    this.router.add(method, fullPath, stack);
+    this.router.add(method, fullPath, stack, options);
   }
 
   // Type helper to Merge Routes
