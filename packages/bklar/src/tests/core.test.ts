@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import { z } from "zod";
-import type { App } from "../app";
-import { Bklar } from "../app";
+import { Bklar, type BklarApp as App } from "../app";
 import type { Middleware } from "../types";
 
 let app: App;
@@ -16,7 +15,7 @@ describe("Core Framework Tests", () => {
       app.get("/health", (ctx) => ctx.json({ status: "ok" }));
 
       const req = new Request("http://localhost/health");
-      const res = await app.router.handle(req);
+      const res = await app.handle(req);
 
       expect(res.status).toBe(200);
       const body = await res.json();
@@ -25,7 +24,7 @@ describe("Core Framework Tests", () => {
 
     it("should return 404 for a route that does not exist", async () => {
       const req = new Request("http://localhost/not-found");
-      const res = await app.router.handle(req);
+      const res = await app.handle(req);
 
       expect(res.status).toBe(404);
       const body = await res.json();
@@ -36,7 +35,7 @@ describe("Core Framework Tests", () => {
       app.post("/data", (ctx) => ctx.json({ created: true }));
 
       const req = new Request("http://localhost/data", { method: "GET" });
-      const res = await app.router.handle(req);
+      const res = await app.handle(req);
 
       expect(res.status).toBe(404);
     });
@@ -49,7 +48,7 @@ describe("Core Framework Tests", () => {
       });
 
       const req = new Request("http://localhost/users/123/posts/abc-456");
-      const res = await app.router.handle(req);
+      const res = await app.handle(req);
       const body = await res.json();
 
       expect(res.status).toBe(200);
@@ -66,7 +65,7 @@ describe("Core Framework Tests", () => {
       });
 
       const req = new Request("http://localhost/search?q=bklar");
-      const res = await app.router.handle(req);
+      const res = await app.handle(req);
       const body = await res.json();
 
       expect(res.status).toBe(200);
@@ -81,7 +80,7 @@ describe("Core Framework Tests", () => {
       });
 
       const req = new Request("http://localhost/search?q=bun");
-      const res = await app.router.handle(req);
+      const res = await app.handle(req);
       const body = await res.json();
 
       expect(res.status).toBe(400);
@@ -103,7 +102,7 @@ describe("Core Framework Tests", () => {
         body: JSON.stringify(userData),
       });
 
-      const res = await app.router.handle(req);
+      const res = await app.handle(req);
       const body = await res.json();
 
       expect(res.status).toBe(200);
@@ -124,7 +123,7 @@ describe("Core Framework Tests", () => {
         body: JSON.stringify(invalidData),
       });
 
-      const res = await app.router.handle(req);
+      const res = await app.handle(req);
       const body = await res.json();
 
       expect(res.status).toBe(400);
@@ -134,21 +133,23 @@ describe("Core Framework Tests", () => {
 
   describe("Middlewares and Groups", () => {
     it("should run a global middleware on every request", async () => {
-      app.use((ctx) => {
+      app.use(async (ctx, next) => {
         ctx.state.global = true;
+        return next();
       });
       app.get("/test", (ctx) => ctx.json({ state: ctx.state }));
 
       const req = new Request("http://localhost/test");
-      const res = await app.router.handle(req);
+      const res = await app.handle(req);
       const body = await res.json();
 
       expect(body.state.global).toBe(true);
     });
 
     it("should run a route-specific middleware", async () => {
-      const routeMiddleware: Middleware = (ctx) => {
+      const routeMiddleware: Middleware = async (ctx, next) => {
         ctx.state.routeSpecific = true;
+        return next();
       };
 
       app.get("/profile", (ctx) => ctx.json({ state: ctx.state }), {
@@ -156,22 +157,19 @@ describe("Core Framework Tests", () => {
       });
       app.get("/home", (ctx) => ctx.json({ state: ctx.state }));
 
-      const res1 = await app.router.handle(
-        new Request("http://localhost/profile")
-      );
+      const res1 = await app.handle(new Request("http://localhost/profile"));
       const body1 = await res1.json();
       expect(body1.state.routeSpecific).toBe(true);
 
-      const res2 = await app.router.handle(
-        new Request("http://localhost/home")
-      );
+      const res2 = await app.handle(new Request("http://localhost/home"));
       const body2 = await res2.json();
       expect(body2.state.routeSpecific).toBeUndefined();
     });
 
     it("should handle grouped routes with a group middleware", async () => {
-      const authMiddleware: Middleware = (ctx) => {
+      const authMiddleware: Middleware = async (ctx, next) => {
         ctx.state.user = { id: 1 };
+        return next();
       };
 
       app.group(
@@ -183,7 +181,7 @@ describe("Core Framework Tests", () => {
       );
 
       const req = new Request("http://localhost/admin/dashboard");
-      const res = await app.router.handle(req);
+      const res = await app.handle(req);
       const body = await res.json();
 
       expect(res.status).toBe(200);
@@ -193,15 +191,18 @@ describe("Core Framework Tests", () => {
     it("should apply middlewares in correct order: global -> group -> route", async () => {
       const order: string[] = [];
 
-      app.use(() => {
+      app.use(async (ctx, next) => {
         order.push("global");
+        return next();
       });
 
-      const groupMiddleware: Middleware = () => {
+      const groupMiddleware: Middleware = async (ctx, next) => {
         order.push("group");
+        return next();
       };
-      const routeMiddleware: Middleware = () => {
+      const routeMiddleware: Middleware = async (ctx, next) => {
         order.push("route");
+        return next();
       };
 
       app.group(
@@ -220,7 +221,7 @@ describe("Core Framework Tests", () => {
       );
 
       const req = new Request("http://localhost/test/order");
-      await app.router.handle(req);
+      await app.handle(req);
 
       expect(order).toEqual(["global", "group", "route", "handler"]);
     });

@@ -1,322 +1,107 @@
-import { Context } from "./context";
-import {
-  defaultErrorHandler,
-  ErrorType,
-  HttpError,
-  NotFoundError,
-} from "./errors";
-import type {
-  ErrorHandler,
-  ErrorHook,
-  Handler,
-  Hook,
-  Middleware,
-  ResponseHook,
-  Route,
-  RouteOptions,
-  Schemas,
-} from "./types";
-import { ValidationError } from "./types";
-import { compose } from "./utils/compose";
+import { RadixNode } from "./router/node";
+import type { Middleware } from "./types";
 
-interface RouterOptions {
-  errorHandler?: ErrorHandler;
-  hooks?: {
-    onRequest?: Hook[];
-    preParse?: Hook[];
-    preValidation?: Hook[];
-    preHandler?: Hook[];
-    onResponse?: ResponseHook[];
-    onError?: ErrorHook[];
-  };
+export interface MatchResult {
+  handlers: Middleware[];
+  params: Record<string, string>;
 }
 
 export class Router {
-  private routes: Route<any>[] = [];
-  private globalMiddlewares: Middleware[] = [];
-  private readonly errorHandler: ErrorHandler;
-  private readonly hooks: Required<NonNullable<RouterOptions["hooks"]>>;
+  root: RadixNode = new RadixNode();
 
-  constructor(options: RouterOptions = {}) {
-    this.errorHandler = options.errorHandler || defaultErrorHandler;
-    this.hooks = {
-      onRequest: options.hooks?.onRequest || [],
-      preParse: options.hooks?.preParse || [],
-      preValidation: options.hooks?.preValidation || [],
-      preHandler: options.hooks?.preHandler || [],
-      onResponse: options.hooks?.onResponse || [],
-      onError: options.hooks?.onError || [],
-    };
-  }
+  add(method: string, path: string, middlewares: Middleware[]) {
+    const segments = path.split("/").filter(Boolean);
+    let currentNode = this.root;
 
-  use(middleware: Middleware) {
-    this.globalMiddlewares.push(middleware);
-  }
-
-  add<S extends Schemas>(
-    method: string,
-    pattern: string,
-    handler: Handler<S>,
-    options: RouteOptions<S> = {}
-  ) {
-    const segments = pattern.split("/").filter(Boolean);
-    this.routes.push({ method, segments, handler, options });
-    return this;
-  }
-
-  get<S extends Schemas>(
-    path: string,
-    handler: Handler<S>,
-    options?: RouteOptions<S>
-  ) {
-    return this.add("GET", path, handler, options);
-  }
-  post<S extends Schemas>(
-    path: string,
-    handler: Handler<S>,
-    options?: RouteOptions<S>
-  ) {
-    return this.add("POST", path, handler, options);
-  }
-  put<S extends Schemas>(
-    path: string,
-    handler: Handler<S>,
-    options?: RouteOptions<S>
-  ) {
-    return this.add("PUT", path, handler, options);
-  }
-  delete<S extends Schemas>(
-    path: string,
-    handler: Handler<S>,
-    options?: RouteOptions<S>
-  ) {
-    return this.add("DELETE", path, handler, options);
-  }
-  patch<S extends Schemas>(
-    path: string,
-    handler: Handler<S>,
-    options?: RouteOptions<S>
-  ) {
-    return this.add("PATCH", path, handler, options);
-  }
-
-  group(
-    prefix: string,
-    builder: (router: this) => void,
-    middlewares: Middleware[] = []
-  ) {
-    const prefixSegments = prefix.split("/").filter(Boolean);
-    const originalRoutesCount = this.routes.length;
-
-    builder(this);
-
-    for (let i = originalRoutesCount; i < this.routes.length; i++) {
-      const route = this.routes[i];
-      route.segments = [...prefixSegments, ...route.segments];
-      route.options.middlewares = [
-        ...middlewares,
-        ...(route.options.middlewares || []),
-      ];
-    }
-
-    return this;
-  }
-
-  plug(subApp: { routes: Route<any>[] }) {
-    for (const route of subApp.routes) {
-      const clonedRoute: Route<any> = {
-        ...route,
-        segments: [...route.segments],
-        options: {
-          ...route.options,
-          middlewares: [...(route.options.middlewares || [])],
-        },
-      };
-      this.routes.push(clonedRoute);
-    }
-    return this;
-  }
-
-  private async executeHooks(
-    ctx: Context<any>,
-    hooks: Hook[]
-  ): Promise<Response | void> {
-    for (const hook of hooks) {
-      const result = await hook(ctx);
-      if (result instanceof Response) {
-        return result;
-      }
-    }
-  }
-
-  private async executeResponseHooks(
-    ctx: Context<any>,
-    response: Response,
-    hooks: ResponseHook[]
-  ) {
-    for (const hook of hooks) {
-      await hook(ctx, response);
-    }
-  }
-
-  private async executeErrorHooks(
-    ctx: Context<any>,
-    error: unknown,
-    hooks: ErrorHook[]
-  ) {
-    for (const hook of hooks) {
-      await hook(ctx, error);
-    }
-  }
-
-  private async validate(ctx: Context<any>, schemas: Schemas | undefined) {
-    if (!schemas) return;
-
-    await ctx.parseBody();
-
-    const results = {
-      query: schemas.query?.safeParse(ctx.query),
-      params: schemas.params?.safeParse(ctx.params),
-      body: schemas.body?.safeParse(ctx.body),
-    };
-
-    const errors: Record<string, any> = {};
-    let hasError = false;
-
-    for (const [key, result] of Object.entries(results)) {
-      if (result && !result.success) {
-        hasError = true;
-        errors[key] = result.error.flatten().fieldErrors;
-      } else if (result?.success) {
-        (ctx as any)[key] = result.data;
-      }
-    }
-
-    if (hasError) {
-      throw new ValidationError(errors);
-    }
-  }
-
-  private async _findAndExecuteRoute(ctx: Context<any>): Promise<Response> {
-    const url = new URL(ctx.req.url);
-    const pathSegments = url.pathname.split("/").filter(Boolean);
-
-    for (const route of this.routes) {
-      if (route.method !== ctx.req.method && route.method !== "*") continue;
-      if (route.segments.length !== pathSegments.length) continue;
-
-      const params: Record<string, string> = {};
-      let isMatch = true;
-
-      for (let i = 0; i < route.segments.length; i++) {
-        const routeSegment = route.segments[i];
-        const pathSegment = pathSegments[i];
-        if (routeSegment.startsWith(":")) {
-          params[routeSegment.slice(1)] = pathSegment;
-        } else if (routeSegment !== pathSegment) {
-          isMatch = false;
-          break;
+    for (const segment of segments) {
+      if (segment === "*") {
+        if (!currentNode.wildcardNode) {
+          currentNode.wildcardNode = new RadixNode();
         }
-      }
-      if (!isMatch) continue;
-
-      ctx.params = params;
-
-      // Wrap the final handler logic into a middleware function
-      const routeHandler: Middleware = async (ctx) => {
-        // --- preValidation Hook ---
-        const scVal = await this.executeHooks(ctx, this.hooks.preValidation);
-        if (scVal instanceof Response) return scVal;
-
-        if (route.options.schemas) {
-          await this.validate(ctx, route.options.schemas);
+        currentNode = currentNode.wildcardNode;
+        // Wildcard is terminal for this router implementation
+        break;
+      } else if (segment.startsWith(":")) {
+        const paramName = segment.slice(1);
+        if (!currentNode.paramNode) {
+          currentNode.paramNode = new RadixNode();
+          currentNode.paramNode.paramName = paramName;
         }
-
-        // --- preHandler Hook ---
-        const scHandler = await this.executeHooks(ctx, this.hooks.preHandler);
-        if (scHandler instanceof Response) return scHandler;
-
-        const res = await route.handler(ctx);
-        if (res instanceof Response) return res;
-        // Should not happen if handler is strictly typed to return Response | Promise<Response>,
-        // but Typescript allows void return in some Handler definitions if not strict.
-        // Assuming strict compliance or framework default.
-        // If it's undefined, we should probably throw or return 200 OK empty?
-        // Let's assume the handler MUST return a Response.
-        return res as Response; 
-      };
-
-      // Compose route-specific middlewares and the handler
-      const stack = route.options.middlewares || [];
-      const fn = compose(stack);
-      
-      // Execute route stack, with the handler as the final "next"
-      return fn(ctx, () => routeHandler(ctx, async () => new Response("")));
-    }
-
-    throw new NotFoundError();
-  }
-
-  async handle(req: Request): Promise<Response> {
-    const ctx = new Context(req, {});
-    let response: Response;
-
-    try {
-      // --- onRequest Hook ---
-      let shortCircuitResponse = await this.executeHooks(
-        ctx,
-        this.hooks.onRequest
-      );
-      if (shortCircuitResponse) return shortCircuitResponse;
-
-      // --- preParse Hook ---
-      shortCircuitResponse = await this.executeHooks(ctx, this.hooks.preParse);
-      if (shortCircuitResponse) return shortCircuitResponse;
-
-      ctx.query = Object.fromEntries(new URL(req.url).searchParams.entries());
-
-      // Compose Global Middlewares
-      // The "next" after global middlewares is the route matching logic
-      const dispatch = compose(this.globalMiddlewares);
-      
-      response = await dispatch(ctx, () => this._findAndExecuteRoute(ctx));
-
-    } catch (error) {
-      // --- onError Hook ---
-      await this.executeErrorHooks(ctx, error, this.hooks.onError);
-
-      if (error instanceof ValidationError) {
-        const validationError = new HttpError(
-          ErrorType.VALIDATION,
-          "Validation Error",
-          error.details
-        );
-        response = await this.errorHandler(validationError, ctx);
+        if (currentNode.paramNode.paramName !== paramName) {
+          throw new Error(
+            `Parameter name collision at ${path}: ${currentNode.paramNode.paramName} vs ${paramName}`
+          );
+        }
+        currentNode = currentNode.paramNode;
       } else {
-        response = await this.errorHandler(error, ctx);
+        if (!currentNode.children[segment]) {
+          currentNode.children[segment] = new RadixNode();
+        }
+        currentNode = currentNode.children[segment];
       }
     }
 
-    // --- onResponse Hook ---
-    await this.executeResponseHooks(ctx, response, this.hooks.onResponse);
-
-    // Final post-processing
-    if (ctx.state.corsHeaders instanceof Headers) {
-      // @ts-expect-error Headers is not iterable
-      for (const [key, value] of ctx.state.corsHeaders.entries()) {
-        response.headers.append(key, value);
-      }
+    // Initialize array if not exists
+    if (!currentNode.handlers[method]) {
+        currentNode.handlers[method] = [];
     }
-    if (ctx.state.rateLimitHeaders) {
-      for (const [key, value] of Object.entries(ctx.state.rateLimitHeaders)) {
-        response.headers.set(key, String(value));
-      }
-    }
-
-    return response;
+    // Store the stack
+    currentNode.handlers[method] = middlewares;
   }
 
-  public getRoutes(): Route<any>[] {
-    return this.routes;
+  find(method: string, path: string): MatchResult | null {
+    const segments = path.split("/").filter(Boolean);
+    const params: Record<string, string> = {};
+
+    const node = this._search(this.root, segments, 0, params);
+
+    if (!node || !node.handlers[method]) {
+      // Check for generic handlers or return null
+      return null;
+    }
+
+    return {
+      handlers: node.handlers[method],
+      params,
+    };
+  }
+
+  private _search(
+    node: RadixNode,
+    segments: string[],
+    idx: number,
+    params: Record<string, string>
+  ): RadixNode | null {
+    if (idx === segments.length) {
+      return node;
+    }
+
+    const segment = segments[idx];
+
+    // 1. Static match
+    if (node.children[segment]) {
+      const res = this._search(node.children[segment], segments, idx + 1, params);
+      if (res) return res;
+    }
+
+    // 2. Param match
+    if (node.paramNode) {
+      if (node.paramNode.paramName) {
+        params[node.paramNode.paramName] = segment;
+      }
+      const res = this._search(node.paramNode, segments, idx + 1, params);
+      if (res) return res;
+      // Backtrack
+      if (node.paramNode.paramName) {
+        delete params[node.paramNode.paramName];
+      }
+    }
+
+    // 3. Wildcard match
+    if (node.wildcardNode) {
+      return node.wildcardNode;
+    }
+
+    return null;
   }
 }
