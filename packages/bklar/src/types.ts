@@ -15,9 +15,10 @@ export type InferContext<S extends Schemas> = Context<{
   body: S["body"] extends AnyZodObject ? z.infer<S["body"]> : never;
 }>;
 
-export type Handler<S extends Schemas = {}> = (
+// Handler can return Response or any JSON-serializable data
+export type Handler<S extends Schemas = {}, ResponseType = any> = (
   ctx: InferContext<S>
-) => Response | Promise<Response>;
+) => ResponseType | Promise<ResponseType>;
 
 export type Next = () => Promise<Response | void>;
 
@@ -56,3 +57,10 @@ export interface BklarOptions {
 }
 
 export interface State {}
+
+// Helper types for Client RPC
+export type InferInput<S extends Schemas> = {
+    query: S["query"] extends AnyZodObject ? z.infer<S["query"]> : never;
+    params: S["params"] extends AnyZodObject ? z.infer<S["params"]> : never;
+    body: S["body"] extends AnyZodObject ? z.infer<S["body"]> : never;
+};

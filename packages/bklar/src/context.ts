@@ -1,5 +1,15 @@
 import { State } from "./types";
 
+export interface CookieOptions {
+  domain?: string;
+  expires?: Date;
+  httpOnly?: boolean;
+  maxAge?: number;
+  path?: string;
+  secure?: boolean;
+  sameSite?: "Strict" | "Lax" | "None";
+}
+
 export class Context<T extends { query: any; params: any; body: any }> {
   public readonly req: Request;
   public state: State = {};
@@ -7,6 +17,8 @@ export class Context<T extends { query: any; params: any; body: any }> {
   public query: T["query"] = {} as T["query"];
   public body: T["body"] = {} as T["body"];
   private bodyParsed = false;
+  // Store cookies to be set in the response
+  public _setCookies: string[] = [];
 
   constructor(req: Request, params: T["params"]) {
     this.req = req;
@@ -41,9 +53,12 @@ export class Context<T extends { query: any; params: any; body: any }> {
     status: number = 200,
     headers: HeadersInit = {}
   ): Response {
+    const responseHeaders = new Headers(headers);
+    responseHeaders.set("Content-Type", "application/json");
+    this._appendCookies(responseHeaders);
     return new Response(JSON.stringify(data), {
       status,
-      headers: { ...headers, "Content-Type": "application/json" },
+      headers: responseHeaders,
     });
   }
 
@@ -52,13 +67,48 @@ export class Context<T extends { query: any; params: any; body: any }> {
     status: number = 200,
     headers: HeadersInit = {}
   ): Response {
+    const responseHeaders = new Headers(headers);
+    responseHeaders.set("Content-Type", "text/plain;charset=UTF-8");
+    this._appendCookies(responseHeaders);
     return new Response(data, {
       status,
-      headers: { ...headers, "Content-Type": "text/plain;charset=UTF-8" },
+      headers: responseHeaders,
     });
   }
 
   status(status: number, headers: HeadersInit = {}): Response {
-    return new Response(null, { status, headers });
+    const responseHeaders = new Headers(headers);
+    this._appendCookies(responseHeaders);
+    return new Response(null, { status, headers: responseHeaders });
+  }
+
+  getCookie(name: string): string | undefined {
+    const cookieHeader = this.req.headers.get("Cookie");
+    if (!cookieHeader) return undefined;
+    const cookies = cookieHeader.split(";").reduce((acc, cookie) => {
+      const [key, value] = cookie.split("=").map((c) => c.trim());
+      acc[key] = value;
+      return acc;
+    }, {} as Record<string, string>);
+    return cookies[name];
+  }
+
+  setCookie(name: string, value: string, options: CookieOptions = {}) {
+    let cookieString = `${name}=${value}`;
+    if (options.domain) cookieString += `; Domain=${options.domain}`;
+    if (options.path) cookieString += `; Path=${options.path}`;
+    if (options.expires) cookieString += `; Expires=${options.expires.toUTCString()}`;
+    if (options.maxAge) cookieString += `; Max-Age=${options.maxAge}`;
+    if (options.httpOnly) cookieString += `; HttpOnly`;
+    if (options.secure) cookieString += `; Secure`;
+    if (options.sameSite) cookieString += `; SameSite=${options.sameSite}`;
+    
+    this._setCookies.push(cookieString);
+  }
+
+  private _appendCookies(headers: Headers) {
+    for (const cookie of this._setCookies) {
+      headers.append("Set-Cookie", cookie);
+    }
   }
 }

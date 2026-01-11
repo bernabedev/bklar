@@ -8,6 +8,7 @@ import {
   type Middleware,
   type RouteOptions,
   type Schemas,
+  type InferInput,
   ValidationError,
 } from "./types";
 import {
@@ -18,7 +19,19 @@ import {
 } from "./errors";
 import { defaultLogger } from "./utils/logger";
 
-export class BklarApp {
+// Define the structure for route types
+export type RouteType<
+  Method extends string,
+  S extends Schemas,
+  ReturnType
+> = {
+  [M in Method]: {
+    input: InferInput<S>;
+    output: ReturnType extends Response ? any : ReturnType; // If Response, we can't infer much, otherwise it's the JSON type
+  };
+};
+
+export class BklarApp<Routes = {}> {
   public readonly router: Router;
   public readonly options: BklarOptions;
   private globalMiddlewares: Middleware[] = [];
@@ -41,7 +54,7 @@ export class BklarApp {
   public _add(
     method: string,
     path: string,
-    handler: Handler<any>,
+    handler: Handler<any, any>,
     options: RouteOptions<any> = {},
     prefix: string = "",
     middlewares: Middleware[] = []
@@ -59,65 +72,99 @@ export class BklarApp {
       stack.push(this.createValidationMiddleware(options.schemas));
     }
 
-    // 3. Handler Wrapper
+    // 3. Handler Wrapper with Response Auto-Wrapping
     stack.push(async (ctx, next) => {
       const res = await handler(ctx as any);
+      
+      if (res instanceof Response) {
+        return res;
+      }
+      
+      // Auto-wrap JSON/Strings
+      if (typeof res === "object" || Array.isArray(res)) {
+         return ctx.json(res);
+      }
+      if (typeof res === "string") {
+         return ctx.text(res);
+      }
+      // If void/undefined, we expect the handler to have handled the response manually or it's a mistake.
+      // But for type safety, we usually expect a return.
+      // If it is absolutely void/null, send 200 OK empty? 
+      // Current behavior: return undefined, caught by final handler -> 500 or 404
+      // Let's assume user must return something or use ctx methods.
+      // If they used ctx.json(), that returns a Response, so we are good.
+      // If they just return { data: 1 }, we caught it above.
+      
       return res;
     });
 
     this.router.add(method, fullPath, stack);
   }
 
-  get<S extends Schemas>(
+  // Type helper to Merge Routes
+  private _ret<Method extends string, Path extends string, S extends Schemas, Ret>(
+     // phantom params for inference
+  ): BklarApp<Routes & { [K in Path]: RouteType<Method, S, Ret> }> {
+      return this as any;
+  }
+
+  get<S extends Schemas, Ret>(
     path: string,
-    handler: Handler<S>,
+    handler: Handler<S, Ret>,
     options?: RouteOptions<S>
   ) {
     this._add("GET", path, handler, options);
-    return this;
+    return this._ret<"get", typeof path, S, Ret>();
   }
 
-  post<S extends Schemas>(
+  post<S extends Schemas, Ret>(
     path: string,
-    handler: Handler<S>,
+    handler: Handler<S, Ret>,
     options?: RouteOptions<S>
   ) {
     this._add("POST", path, handler, options);
-    return this;
+    return this._ret<"post", typeof path, S, Ret>();
   }
 
-  put<S extends Schemas>(
+  put<S extends Schemas, Ret>(
     path: string,
-    handler: Handler<S>,
+    handler: Handler<S, Ret>,
     options?: RouteOptions<S>
   ) {
     this._add("PUT", path, handler, options);
-    return this;
+    return this._ret<"put", typeof path, S, Ret>();
   }
 
-  delete<S extends Schemas>(
+  delete<S extends Schemas, Ret>(
     path: string,
-    handler: Handler<S>,
+    handler: Handler<S, Ret>,
     options?: RouteOptions<S>
   ) {
     this._add("DELETE", path, handler, options);
-    return this;
+    return this._ret<"delete", typeof path, S, Ret>();
   }
 
-  patch<S extends Schemas>(
+  patch<S extends Schemas, Ret>(
     path: string,
-    handler: Handler<S>,
+    handler: Handler<S, Ret>,
     options?: RouteOptions<S>
   ) {
     this._add("PATCH", path, handler, options);
-    return this;
+    return this._ret<"patch", typeof path, S, Ret>();
   }
 
   group(
     prefix: string,
-    builder: (app: BklarApp) => void,
+    builder: (app: BklarApp<any>) => void,
     middlewares: Middleware[] = []
   ) {
+    // Note: TypeScript inference for groups is extremely hard to propagate cleanly 
+    // without complex recursive types. For this v2 prototype, we will accept that
+    // routes inside a group might need manual type casting or the builder pattern
+    // limits inference scope.
+    // HOWEVER, we can try to make it work by having the builder return the modified app.
+    // For now, we keep the runtime logic. Ideally, builder would take `app` and return `app`.
+    
     const proxy = new Proxy(this, {
       get: (target, prop, receiver) => {
         if (
@@ -125,7 +172,7 @@ export class BklarApp {
         ) {
           return (
             path: string,
-            handler: Handler<any>,
+            handler: Handler<any, any>,
             options?: RouteOptions<any>
           ) => {
             target._add(
@@ -156,7 +203,7 @@ export class BklarApp {
         return Reflect.get(target, prop, receiver);
       },
     });
-    builder(proxy);
+    builder(proxy as any);
     return this;
   }
 
@@ -214,11 +261,9 @@ export class BklarApp {
     try {
       const res = await dispatch(ctx);
       if (res instanceof Response) return res;
-      // If we got here and no response, it implies middlewares didn't return next() result
-      // or the chain ended without returning Response (e.g. 404 handler threw error?)
-      // Actually 404 handler throws NotFoundError, so we go to catch block.
-      // If we are here, it means we have void result.
-      return new Response("Internal Server Error", { status: 500 });
+      // Handle the case where the chain finishes but no response was returned
+      // (e.g. middleware didn't return, or handler returned undefined)
+       return new Response("Internal Server Error", { status: 500 });
     } catch (error) {
        if (error instanceof ValidationError) {
         const validationError = new HttpError(
@@ -278,3 +323,6 @@ export class BklarApp {
 export function Bklar(options?: BklarOptions) {
   return new BklarApp(options);
 }
+
+// Export for Type Inference
+export type InferRoutes<T> = T extends BklarApp<infer R> ? R : never;
