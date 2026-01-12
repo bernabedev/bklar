@@ -1,40 +1,40 @@
-import { cors } from "@bklarjs/cors";
 import { jwt, sign } from "@bklarjs/jwt";
-import { rateLimit } from "@bklarjs/rate-limit";
-import { staticServer } from "@bklarjs/static";
-import { swagger } from "@bklarjs/swagger";
-import { Bklar, InferContext } from "bklar";
+// import { rateLimit } from "@bklarjs/rate-limit";
+// import { staticServer } from "@bklarjs/static";
+import { Bklar, type InferContext } from "bklar";
 import { NotFoundError, UnauthorizedError } from "bklar/errors";
 import { z } from "zod";
 
 const app = Bklar();
 
-app.onRequest((ctx) => {
-  console.log("Request received");
-});
-app.preParse((ctx) => {
-  console.log("Pre-parsing");
-});
-app.preValidation((ctx) => {
-  console.log("Pre-validation");
-});
-app.preHandler((ctx) => {
-  console.log("Pre-handler");
-});
-app.onError((ctx) => {
-  console.log("Error");
-});
-app.onResponse((ctx) => {
-  console.log("Response");
+// --- 1. Global Middleware (Replacements for onRequest/onResponse hooks) ---
+// Corrected Logger Middleware using correct v2 pattern
+app.use(async (ctx, next) => {
+  const start = performance.now();
+  console.log(`-> ${ctx.req.method} ${ctx.req.url}`);
+
+  const res = await next();
+
+  const ms = performance.now() - start;
+  let status = 200;
+  if (res instanceof Response) {
+    status = res.status;
+  }
+  console.log(
+    `<- ${ctx.req.method} ${ctx.req.url} ${status} - ${ms.toFixed(2)}ms`
+  );
+
+  return res;
 });
 
-app.use(cors({ origin: true }));
-app.use(rateLimit({ max: 100 }));
-app.use(staticServer({ root: "./public" }));
+// --- 2. Plugins ---
+// app.use(cors({ origin: true }));
+// app.use(rateLimit({ max: 100 }));
+// app.use(staticServer({ root: "./public" }));
+
 const JWT_SECRET = "a-super-secret-key-that-should-be-in-an-env";
 
 // --- Mock Database and User Service ---
-
 const USERS = [
   {
     id: 1,
@@ -52,7 +52,7 @@ const USERS = [
 
 const UserService = {
   getAll: () => {
-    return USERS.map(({ password, ...user }) => user); // Never expose passwords
+    return USERS.map(({ password, ...user }) => user);
   },
   find: (id: number) => {
     const user = USERS.find((user) => user.id === id);
@@ -63,7 +63,6 @@ const UserService = {
   login: (email: string, pass: string) => {
     const user = USERS.find((user) => user.email === email);
     if (!user || user.password !== pass) {
-      // In a real app, you'd use bcrypt.compare()
       throw new UnauthorizedError("Invalid email or password");
     }
     const { password, ...userWithoutPassword } = user;
@@ -75,29 +74,13 @@ const UserService = {
 
 app.get(
   "/health",
-  (ctx) => {
-    return ctx.json({ status: "ok" });
+  () => {
+    return { status: "ok" };
   },
   {
     doc: {
       tags: ["Health"],
       description: "Health check",
-      summary: "Health check (public)",
-      responses: {
-        "200": {
-          description: "OK",
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                properties: {
-                  status: { type: "string" },
-                },
-              },
-            },
-          },
-        },
-      },
     },
   }
 );
@@ -106,33 +89,19 @@ const userSchema = z.object({
   id: z.number(),
   name: z.string(),
   email: z.string(),
-  createdAt: z.date(),
 });
 
 type UserContext = InferContext<{ body: typeof userSchema }>;
 
 class UserController {
   static getAll(ctx: UserContext) {
-    const users = UserService.getAll();
-    return ctx.json(users);
+    return UserService.getAll();
   }
 }
 
 app.get("/users", UserController.getAll, {
   doc: {
     tags: ["Users"],
-    description: "Get all users",
-    summary: "Get all users (public)",
-    responses: {
-      "200": {
-        description: "A list of users.",
-        content: {
-          "application/json": {
-            schema: z.array(userSchema),
-          },
-        },
-      },
-    },
   },
   schemas: {
     query: z.object({
@@ -145,8 +114,7 @@ app.get("/users", UserController.getAll, {
 app.get(
   "/users/:id",
   (ctx) => {
-    const user = UserService.find(ctx.params.id);
-    return ctx.json(user);
+    return UserService.find(Number(ctx.params.id));
   },
   {
     schemas: {
@@ -160,7 +128,6 @@ app.get(
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
-  date: z.date(),
 });
 
 app.post(
@@ -176,7 +143,7 @@ app.post(
       { expiresIn: "1h" }
     );
 
-    return ctx.json({ token });
+    return { token };
   },
   {
     schemas: { body: loginSchema },
@@ -187,28 +154,27 @@ app.post(
 
 const authMiddleware = jwt<{ email: string }>({ secret: JWT_SECRET });
 
-// Protected profile route
 app.get(
   "/profile",
   (ctx) => {
-    const userPayload = ctx.state.jwt;
-    userPayload?.email;
+    const userPayload = ctx.state.jwt as any; // Cast or use generic if available
     const user = UserService.find(Number(userPayload?.sub));
-    return ctx.json({
+    return {
       message: "This is a protected route. Welcome!",
       user,
-    });
+    };
   },
   {
     middlewares: [authMiddleware],
   }
 );
 
-// Protected PUT route with auth middleware
+// Keep one using ctx.json for backward compatibility demonstration
 app.put(
   "/users/:id",
   (ctx) => {
-    console.log(`User ${ctx.state.jwt?.sub} is updating user ${ctx.params.id}`);
+    const userPayload = ctx.state.jwt as any;
+    console.log(`User ${userPayload?.sub} is updating user ${ctx.params.id}`);
     return ctx.json({ ...ctx.body, id: ctx.params.id });
   },
   {
@@ -219,25 +185,13 @@ app.put(
     },
     doc: {
       tags: ["Users"],
-      description: "Update a user",
       summary: "Update a user (protected)",
-      responses: {
-        "200": {
-          description: "The updated user.",
-          content: {
-            "application/json": {
-              schema: z.object({
-                id: z.number(),
-                name: z.string(),
-                email: z.string(),
-              }),
-            },
-          },
-        },
-      },
     },
   }
 );
 
-swagger({ path: "/docs" }).setup(app);
+// swagger({ path: "/docs" }).setup(app);
+
 app.listen(4000);
+
+export type AppType = typeof app;

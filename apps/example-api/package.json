@@ -1,8 +1,9 @@
 {
-  "name": "mi-api",
+  "name": "example-api",
   "version": "1.0.0",
   "scripts": {
-    "dev": "bun --watch src/index.ts"
+    "dev": "bun --watch src/index.ts",
+    "test:client": "bun src/client-test.ts"
   },
   "dependencies": {
     "@bklarjs/cors": "workspace:*",
@@ -11,6 +12,6 @@
     "@bklarjs/static": "workspace:*",
     "@bklarjs/swagger": "workspace:*",
     "bklar": "workspace:*",
-    "zod": "^4.0.5"
+    "zod": "^4.0.0"
   }
 }
