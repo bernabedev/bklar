@@ -1,18 +1,18 @@
-import { Bklar as createApp } from "bklar";
+import { Bklar } from "bklar";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import fs from "fs/promises";
-import path from "path";
-import { staticServer } from "..";
+import fs from "node:fs/promises";
+import path from "node:path";
+import { staticFiles } from "..";
 
 // Define a temporary directory for our static files
 const tempPublicDir = path.join(import.meta.dir, "test-public");
 
-describe("@bklarjs/static Middleware Tests", () => {
-  let app: ReturnType<typeof createApp>;
+describe("Static Middleware", () => {
+  let app: ReturnType<typeof Bklar>;
 
   // Setup: Create the temp directory and files before each test
   beforeEach(async () => {
-    app = createApp({ logger: false }); // Disable logger for clean test output
+    app = Bklar({ logger: false });
 
     // Create a temporary public directory
     await fs.mkdir(tempPublicDir, { recursive: true });
@@ -23,12 +23,12 @@ describe("@bklarjs/static Middleware Tests", () => {
       "<h1>Hello World</h1>"
     );
 
-    // Create a dummy image file (a simple 1x1 PNG buffer)
-    const pngBuffer = Buffer.from(
-      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
-      "base64"
+    // Create a subfolder file
+    await fs.mkdir(path.join(tempPublicDir, "assets"), { recursive: true });
+    await fs.writeFile(
+      path.join(tempPublicDir, "assets/style.css"),
+      "body { color: red; }"
     );
-    await fs.writeFile(path.join(tempPublicDir, "assets/logo.png"), pngBuffer);
 
     // Create a dotfile to test security
     await fs.writeFile(path.join(tempPublicDir, ".secret"), "dont-read-me");
@@ -39,11 +39,10 @@ describe("@bklarjs/static Middleware Tests", () => {
     await fs.rm(tempPublicDir, { recursive: true, force: true });
   });
 
-  it("should serve a static HTML file from the root", async () => {
-    app.use(staticServer({ root: tempPublicDir }));
+  it("should serve a static HTML file", async () => {
+    app.use(staticFiles({ root: tempPublicDir }));
 
-    const req = new Request("http://localhost/index.html");
-    const res = await app.router.handle(req);
+    const res = await app.request("/index.html");
 
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toStartWith("text/html");
@@ -51,85 +50,73 @@ describe("@bklarjs/static Middleware Tests", () => {
     expect(text).toBe("<h1>Hello World</h1>");
   });
 
-  it("should serve a static image file with the correct content type", async () => {
-    app.use(staticServer({ root: tempPublicDir }));
+  it("should serve files from subdirectories", async () => {
+    app.use(staticFiles({ root: tempPublicDir }));
 
-    const req = new Request("http://localhost/assets/logo.png");
-    const res = await app.router.handle(req);
+    const res = await app.request("/assets/style.css");
 
     expect(res.status).toBe(200);
-    // Bun.file automatically sets the correct content type
-    expect(res.headers.get("Content-Type")).toBe("image/png");
-
-    // We can also verify the content length to be sure
-    const buffer = await res.arrayBuffer();
-    expect(buffer.byteLength).toBe(68); // Size of the 1x1 PNG buffer
+    expect(res.headers.get("Content-Type")).toStartWith("text/css");
+    expect(await res.text()).toBe("body { color: red; }");
   });
 
   it("should correctly serve files when using a prefix", async () => {
-    app.use(staticServer({ root: tempPublicDir, prefix: "/static" }));
+    app.use(staticFiles({ root: tempPublicDir, prefix: "/static" }));
 
-    // Request with the prefix
-    const req = new Request("http://localhost/static/index.html");
-    const res = await app.router.handle(req);
+    const res = await app.request("/static/index.html");
 
     expect(res.status).toBe(200);
-    const text = await res.text();
-    expect(text).toBe("<h1>Hello World</h1>");
+    expect(await res.text()).toBe("<h1>Hello World</h1>");
   });
 
-  it("should not serve a file if the request does not match the prefix", async () => {
-    app.use(staticServer({ root: tempPublicDir, prefix: "/static" }));
-    app.get("/api/data", (ctx) => ctx.json({ data: "api" })); // An API route
+  it("should pass through if prefix does not match", async () => {
+    app.use(staticFiles({ root: tempPublicDir, prefix: "/static" }));
 
-    const req = new Request("http://localhost/api/data"); // Doesn't match '/static'
-    const res = await app.router.handle(req);
+    // Add a fallback route
+    app.get("/api/data", (ctx) => ctx.json({ data: "api" }));
 
-    // It should fall through to the API route handler
+    const res = await app.request("/api/data");
+
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.data).toBe("api");
   });
 
-  it("should return 404 for a file that does not exist", async () => {
-    app.use(staticServer({ root: tempPublicDir }));
+  it("should pass through (404) for a file that does not exist", async () => {
+    app.use(staticFiles({ root: tempPublicDir }));
 
-    const req = new Request("http://localhost/not-found.txt");
-    const res = await app.router.handle(req);
+    const res = await app.request("/not-found.txt");
 
-    // bklar's default 404 handler should be triggered
+    // bklar's default 404 handler should be triggered because staticFiles calls next()
     expect(res.status).toBe(404);
   });
 
   it("should not serve dotfiles by default", async () => {
-    app.use(staticServer({ root: tempPublicDir }));
+    app.use(staticFiles({ root: tempPublicDir }));
 
-    const req = new Request("http://localhost/.secret");
-    const res = await app.router.handle(req);
+    const res = await app.request("/.secret");
 
-    // It should fall through and result in a 404, not serve the file.
+    // It should call next() and result in 404
     expect(res.status).toBe(404);
   });
 
   it("should serve dotfiles when the option is enabled", async () => {
-    app.use(staticServer({ root: tempPublicDir, dotfiles: true }));
+    app.use(staticFiles({ root: tempPublicDir, dotfiles: true }));
 
-    const req = new Request("http://localhost/.secret");
-    const res = await app.router.handle(req);
+    const res = await app.request("/.secret");
 
     expect(res.status).toBe(200);
-    const text = await res.text();
-    expect(text).toBe("dont-read-me");
+    expect(await res.text()).toBe("dont-read-me");
   });
 
   it("should prevent directory traversal attacks", async () => {
-    app.use(staticServer({ root: tempPublicDir }));
+    app.use(staticFiles({ root: tempPublicDir }));
 
     // An attacker might try to access a file outside the public directory
-    const req = new Request("http://localhost/../../../../package.json");
-    const res = await app.router.handle(req);
+    // Bun's Request handler or path normalization usually catches this,
+    // but the middleware logic explicitly checks for it.
+    const res = await app.request("/../../../../package.json");
 
-    // The middleware should ignore this request, leading to a 404.
     expect(res.status).toBe(404);
   });
 });

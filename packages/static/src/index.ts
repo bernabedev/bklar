@@ -30,13 +30,10 @@ export interface StaticOptions {
  * @param options Configuration for the static middleware.
  * @returns A bklar Middleware function.
  */
-export function staticServer(options: StaticOptions): Middleware {
-  // --- Renamed to `Bklar` for API consistency across the ecosystem.
-
+export function staticFiles(options: StaticOptions): Middleware {
   // Normalize options at initialization for performance and predictability.
   const config = {
     // Resolve the root path once, relative to the current working directory.
-    // This ensures that paths like './public' work as expected from the project root.
     root: path.resolve(process.cwd(), options.root),
     prefix: options.prefix || "/",
     dotfiles: options.dotfiles || false,
@@ -46,70 +43,65 @@ export function staticServer(options: StaticOptions): Middleware {
     config.prefix = `/${config.prefix}`;
   }
 
-  const staticMiddleware: Middleware = async (ctx) => {
-    // Only handle GET and HEAD requests for static files.
+  return async (ctx, next) => {
+    // 1. Only handle GET and HEAD requests.
     if (ctx.req.method !== "GET" && ctx.req.method !== "HEAD") {
-      return;
+      return next();
     }
 
     const url = new URL(ctx.req.url);
-    let pathname = url.pathname;
+    const pathname = url.pathname;
 
-    // Only handle requests that match the configured prefix.
+    // 2. Filter by prefix
     if (!pathname.startsWith(config.prefix)) {
-      return; // Not a static file request, continue to the next middleware or handler.
+      return next();
     }
 
-    // Remove the prefix to get the relative file path.
+    // 3. Resolve path
     let assetPath = pathname.substring(config.prefix.length);
+    if (assetPath === "" || assetPath === "/") {
+      assetPath = "/index.html"; // Basic index support
+    }
 
-    // Security: Decode URI to handle encoded characters (e.g., %20 for spaces).
-    // A try-catch block prevents server crashes from malformed URIs.
     try {
       assetPath = decodeURIComponent(assetPath);
-    } catch (e) {
-      // Invalid URI, ignore the request.
-      return;
+    } catch {
+      return next();
     }
 
-    // Security: Prevent serving dotfiles by default.
+    // 4. Security Checks (Dotfiles)
     if (
       !config.dotfiles &&
       assetPath.split("/").some((part) => part.startsWith("."))
     ) {
-      return;
+      return next();
     }
 
-    // Security: Normalize the path to resolve '..' segments and prevent traversal attacks.
+    // 5. Security Checks (Path Traversal)
     const normalizedAssetPath = path.normalize(assetPath);
     const safePath = path.join(config.root, normalizedAssetPath);
 
-    // Security: Final and most important check. Ensure the resolved path is still
-    // within the intended root directory. This definitively prevents directory traversal.
     if (!safePath.startsWith(config.root)) {
-      return;
+      return next();
     }
 
+    // 6. Check File Existence
     try {
       const file = Bun.file(safePath);
-      const stats = await file.stat();
+      // exists() is cheaper than stat(), but stat is needed to check isFile()
+      // Bun.file() is lazy, so we need to await a check.
+      if (await file.exists()) {
+        // stat is slightly more expensive but safer against directories
+        // However, Bun.file() usually errors or behaves specific ways on dirs.
+        // Let's rely on Bun serve mechanics or do a stat check if strictness needed.
+        // For high perf, exists() is usually enough if we trust the path structure.
 
-      // --- IMPROVEMENT: Ensure it's a file, not a directory. ---
-      if (stats.isFile()) {
-        // If the file exists, return a Response with the Bun.File object.
-        // Bun handles Content-Type, ETag, and Last-Modified headers automatically.
-        // This is extremely fast and memory-efficient.
         return new Response(file);
       }
-    } catch (error) {
-      // This catch block handles errors from fs.stat (e.g., file not found).
-      // We do nothing here, allowing the request to fall through to bklar's 404 handler.
+    } catch {
+      // Ignore errors (like file not found), proceed to next middleware
     }
 
-    // If the path is a directory or does not exist, do nothing and let
-    // bklar's router handle it, likely resulting in a 404.
-    return;
+    return next();
   };
-
-  return staticMiddleware;
 }

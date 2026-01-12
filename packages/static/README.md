@@ -45,12 +45,12 @@ Then, apply the middleware globally in your `index.ts`. It's important to add it
 
 ```typescript
 import { Bklar } from "bklar";
-import { serveStatic } from "@bklarjs/static";
+import { staticFiles } from "@bklarjs/static";
 
 const app = Bklar();
 
 // Serve files from the 'public' directory
-app.use(serveStatic({ root: "public" }));
+app.use(staticFiles({ root: "public" }));
 
 // Your API routes go here
 app.get("/api/users", (ctx) => {
@@ -72,7 +72,7 @@ If you want to serve your static files under a specific URL path, use the `prefi
 ```typescript
 // Serve files from the 'dist/assets' directory under the '/assets' URL path
 app.use(
-  serveStatic({
+  staticFiles({
     root: "dist/assets",
     prefix: "/assets",
   })
