@@ -1,7 +1,7 @@
 import type { InferContext, Middleware } from "bklar";
 import { UnauthorizedError } from "bklar/errors";
 import type { JWTPayload } from "jose";
-import * as jose from "jose";
+import { errors, jwtVerify } from "jose";
 
 export * from "./helpers";
 
@@ -46,33 +46,39 @@ export function jwt<T extends JWTPayload = JWTPayload>(
   const secretKey =
     typeof secret === "string" ? new TextEncoder().encode(secret) : secret;
 
-  const jwtMiddleware: Middleware = async (ctx: InferContext<any>) => {
+  const jwtMiddleware: Middleware = async (ctx, next) => {
     const token = getToken(ctx);
 
     if (!token) {
-      if (passthrough) {
-        return;
+      if (!passthrough) {
+        throw new UnauthorizedError("Missing authentication token");
       }
-      throw new UnauthorizedError("Missing authentication token");
+      return next();
     }
 
     try {
-      const { payload } = await jose.jwtVerify(token, secretKey, {
+      const { payload } = await jwtVerify(token, secretKey, {
         algorithms,
       });
       ctx.state.jwt = payload as T;
     } catch (err) {
-      if (passthrough) {
-        return;
+      if (!passthrough) {
+        if (err instanceof errors.JWTExpired) {
+          throw new UnauthorizedError("Token has expired");
+        }
+        if (err instanceof errors.JOSEError) {
+          throw new UnauthorizedError("Invalid token");
+        }
+        throw err;
       }
-      if (err instanceof jose.errors.JWTExpired) {
-        throw new UnauthorizedError("Token has expired");
-      }
-      if (err instanceof jose.errors.JOSEError) {
-        throw new UnauthorizedError("Invalid token");
-      }
-      throw err;
+      // If passthrough is enabled and verification fails, just continue.
+      // ctx.state.jwt will remain undefined.
     }
+
+    // Explicitly await the next middleware to ensure the chain resolves correctly
+    // and returns the Response object from the handler.
+    const res = await next();
+    return res;
   };
 
   return jwtMiddleware;

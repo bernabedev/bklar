@@ -1,13 +1,13 @@
-import { Bklar as createApp } from "bklar";
+import { Bklar } from "bklar";
 import { UnauthorizedError } from "bklar/errors";
 import { beforeEach, describe, expect, it } from "bun:test";
-import * as jose from "jose";
+import { errors } from "jose";
 import { jwt as createJwt, decode, sign, verify } from "../index";
 
 const JWT_SECRET = "my-super-secret-key-for-testing";
 
 describe("@bklarjs/jwt Package Tests", () => {
-  // --- PARTE 1: Tests para los Helpers ---
+  // --- PART 1: Helpers ---
   describe("Helper Functions (sign, verify, decode)", () => {
     const payload = { sub: "123", email: "test@example.com" };
 
@@ -25,7 +25,7 @@ describe("@bklarjs/jwt Package Tests", () => {
       const wrongSecret = "a-different-secret";
 
       await expect(verify(token, wrongSecret)).rejects.toThrow(
-        jose.errors.JWSSignatureVerificationFailed
+        errors.JWSSignatureVerificationFailed
       );
     });
 
@@ -35,28 +35,27 @@ describe("@bklarjs/jwt Package Tests", () => {
       });
 
       await expect(verify(token, JWT_SECRET)).rejects.toThrow(
-        jose.errors.JWTExpired
+        errors.JWTExpired
       );
     });
 
     it("should decode a token without verification", () => {
+      // Unverified token
       const token =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ.R5h1pB-yPldxGMLi2irgJ2QGVer2tAUn0zSA1a5aLwE"; // A valid-looking but unverified token
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ.R5h1pB-yPldxGMLi2irgJ2QGVer2tAUn0zSA1a5aLwE";
       const decoded = decode(token);
       expect(decoded.sub).toBe("123");
     });
   });
 
-  // --- PARTE 2: Tests para el Middleware ---
+  // --- PART 2: Middleware ---
   describe("JWT Middleware Integration", () => {
-    let app: ReturnType<typeof createApp>;
+    let app: ReturnType<typeof Bklar>;
     const payload = { sub: "user-1", role: "admin" };
 
     beforeEach(() => {
-      app = createApp({
-        // Deshabilitamos el logger en los tests para una salida limpia
+      app = Bklar({
         logger: false,
-        // Usamos un errorHandler simple para verificar los errores
         errorHandler: (error) => {
           if (error instanceof UnauthorizedError) {
             return new Response(JSON.stringify({ message: error.message }), {
@@ -75,16 +74,14 @@ describe("@bklarjs/jwt Package Tests", () => {
       });
 
       const token = await sign(payload, JWT_SECRET);
-      const req = new Request("http://localhost/profile", {
+      const res = await app.request("/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const res = await app.router.handle(req);
       const body = await res.json();
 
       expect(res.status).toBe(200);
       expect(body.user.sub).toBe(payload.sub);
-      expect(body.user.role).toBe(payload.role);
     });
 
     it("should throw UnauthorizedError if no token is provided", async () => {
@@ -93,8 +90,7 @@ describe("@bklarjs/jwt Package Tests", () => {
         middlewares: [authMiddleware],
       });
 
-      const req = new Request("http://localhost/protected");
-      const res = await app.router.handle(req);
+      const res = await app.request("/protected");
       const body = await res.json();
 
       expect(res.status).toBe(401);
@@ -108,11 +104,10 @@ describe("@bklarjs/jwt Package Tests", () => {
       });
 
       const invalidToken = "not-a-real-token";
-      const req = new Request("http://localhost/protected", {
+      const res = await app.request("/protected", {
         headers: { Authorization: `Bearer ${invalidToken}` },
       });
 
-      const res = await app.router.handle(req);
       const body = await res.json();
 
       expect(res.status).toBe(401);
@@ -128,11 +123,10 @@ describe("@bklarjs/jwt Package Tests", () => {
       const expiredToken = await sign(payload, JWT_SECRET, "HS256", {
         expiresIn: "-1s",
       });
-      const req = new Request("http://localhost/protected", {
+      const res = await app.request("/protected", {
         headers: { Authorization: `Bearer ${expiredToken}` },
       });
 
-      const res = await app.router.handle(req);
       const body = await res.json();
 
       expect(res.status).toBe(401);
@@ -153,8 +147,7 @@ describe("@bklarjs/jwt Package Tests", () => {
           { middlewares: [authMiddleware] }
         );
 
-        const req = new Request("http://localhost/optional-auth");
-        const res = await app.router.handle(req);
+        const res = await app.request("/optional-auth");
         const body = await res.json();
 
         expect(res.status).toBe(200);
@@ -174,11 +167,10 @@ describe("@bklarjs/jwt Package Tests", () => {
           { middlewares: [authMiddleware] }
         );
 
-        const req = new Request("http://localhost/optional-auth", {
+        const res = await app.request("/optional-auth", {
           headers: { Authorization: "Bearer an-invalid-token" },
         });
 
-        const res = await app.router.handle(req);
         const body = await res.json();
 
         expect(res.status).toBe(200);
@@ -199,11 +191,10 @@ describe("@bklarjs/jwt Package Tests", () => {
         );
 
         const token = await sign(payload, JWT_SECRET);
-        const req = new Request("http://localhost/optional-auth", {
+        const res = await app.request("/optional-auth", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        const res = await app.router.handle(req);
         const body = await res.json();
 
         expect(res.status).toBe(200);

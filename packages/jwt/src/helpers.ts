@@ -1,4 +1,4 @@
-import * as jose from "jose";
+import { SignJWT, decodeJwt, jwtVerify, type JWTPayload } from "jose";
 
 export interface SignOptions {
   expiresIn?: string | number; // e.g., "2h", "7d", or seconds
@@ -13,14 +13,14 @@ export interface SignOptions {
  * @returns The generated JWT.
  */
 export async function sign(
-  payload: jose.JWTPayload,
+  payload: JWTPayload,
   secret: string | Uint8Array,
   alg: string = "HS256",
   options?: SignOptions
 ): Promise<string> {
   const secretKey =
     typeof secret === "string" ? new TextEncoder().encode(secret) : secret;
-  const jwtBuilder = new jose.SignJWT(payload)
+  const jwtBuilder = new SignJWT(payload)
     .setProtectedHeader({ alg })
     .setIssuedAt();
 
@@ -37,17 +37,17 @@ export async function sign(
  * @param secret The secret key.
  * @param algorithms Allowed algorithms for verification.
  * @returns The JWT payload if verification is successful.
- * @throws {jose.errors.JWTExpired} If the token has expired.
- * @throws {jose.errors.JOSEError} For other verification failures.
+ * @throws {errors.JWTExpired} If the token has expired.
+ * @throws {errors.JOSEError} For other verification failures.
  */
-export async function verify<T extends jose.JWTPayload = jose.JWTPayload>(
+export async function verify<T extends JWTPayload = JWTPayload>(
   token: string,
   secret: string | Uint8Array,
   algorithms?: string[]
 ): Promise<T> {
   const secretKey =
     typeof secret === "string" ? new TextEncoder().encode(secret) : secret;
-  const { payload } = await jose.jwtVerify(token, secretKey, { algorithms });
+  const { payload } = await jwtVerify(token, secretKey, { algorithms });
   return payload as T;
 }
 
@@ -57,8 +57,6 @@ export async function verify<T extends jose.JWTPayload = jose.JWTPayload>(
  * @param token The JWT to decode.
  * @returns The decoded payload.
  */
-export function decode<T extends jose.JWTPayload = jose.JWTPayload>(
-  token: string
-): T {
-  return jose.decodeJwt(token) as T;
+export function decode<T extends JWTPayload = JWTPayload>(token: string): T {
+  return decodeJwt(token) as T;
 }
