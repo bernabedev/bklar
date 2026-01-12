@@ -1,0 +1,42 @@
+{
+  "name": "@bklarjs/cron",
+  "version": "1.0.0",
+  "description": "A minimal, robust cron job scheduler for the bklar framework.",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./patterns": {
+      "import": "./dist/patterns.js",
+      "types": "./dist/patterns.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "bunchee",
+    "prepublishOnly": "bun run build",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "croner": "^9.0.0"
+  },
+  "peerDependencies": {
+    "bklar": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "bklar": "workspace:*",
+    "bunchee": "^6.9.3",
+    "typescript": "^5.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

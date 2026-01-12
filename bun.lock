@@ -37,12 +37,12 @@
     },
     "packages/cors": {
       "name": "@bklarjs/cors",
-      "version": "1.0.1",
+      "version": "2.0.0",
       "devDependencies": {
         "bklar": "workspace:*",
       },
       "peerDependencies": {
-        "bklar": ">=1.0.0",
+        "bklar": "^2.0.0",
       },
     },
     "packages/create-bklar": {
@@ -59,9 +59,25 @@
         "@types/prompts": "^2.4.9",
       },
     },
+    "packages/cron": {
+      "name": "@bklarjs/cron",
+      "version": "1.0.0",
+      "dependencies": {
+        "croner": "^9.0.0",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "bklar": "workspace:*",
+        "bunchee": "^6.9.3",
+        "typescript": "^5.0.0",
+      },
+      "peerDependencies": {
+        "bklar": "^2.0.0",
+      },
+    },
     "packages/jwt": {
       "name": "@bklarjs/jwt",
-      "version": "1.0.3",
+      "version": "2.0.0",
       "dependencies": {
         "jose": "^6.0.0",
       },
@@ -72,12 +88,12 @@
         "typescript": "^5.8.3",
       },
       "peerDependencies": {
-        "bklar": ">=1.0.0",
+        "bklar": "^2.0.0",
       },
     },
     "packages/rate-limit": {
       "name": "@bklarjs/rate-limit",
-      "version": "1.0.2",
+      "version": "2.0.0",
       "devDependencies": {
         "@types/bun": "latest",
         "bklar": "workspace:*",
@@ -85,12 +101,12 @@
         "typescript": "^5.0.0",
       },
       "peerDependencies": {
-        "bklar": ">=1.0.0",
+        "bklar": "^2.0.0",
       },
     },
     "packages/static": {
       "name": "@bklarjs/static",
-      "version": "1.0.1",
+      "version": "2.0.0",
       "devDependencies": {
         "@types/bun": "latest",
         "bklar": "workspace:*",
@@ -98,12 +114,12 @@
         "typescript": "^5.0.0",
       },
       "peerDependencies": {
-        "bklar": ">=1.0.0",
+        "bklar": "^2.0.0",
       },
     },
     "packages/swagger": {
       "name": "@bklarjs/swagger",
-      "version": "1.1.1",
+      "version": "2.0.0",
       "dependencies": {
         "swagger-ui-dist": "^5.26.2",
       },
@@ -115,7 +131,7 @@
         "zod": "^4.0.5",
       },
       "peerDependencies": {
-        "bklar": ">=1.0.0",
+        "bklar": ">=2.0.0",
         "zod": "^4.0.0",
       },
     },
@@ -126,6 +142,8 @@
     "@babel/helper-validator-identifier": ["@babel/helper-validator-identifier@7.28.5", "", {}, "sha512-qSs4ifwzKJSV39ucNjsvc6WVHs6b7S03sOh2OcHF9UHfVPqWWALUsNUVzhSBiItjRZoLHx7nIarVjqKVusUZ1Q=="],
 
     "@bklarjs/cors": ["@bklarjs/cors@workspace:packages/cors"],
+
+    "@bklarjs/cron": ["@bklarjs/cron@workspace:packages/cron"],
 
     "@bklarjs/jwt": ["@bklarjs/jwt@workspace:packages/jwt"],
 
@@ -270,6 +288,8 @@
     "commondir": ["commondir@1.0.1", "", {}, "sha512-W9pAhw0ja1Edb5GVdIF1mjZw/ASI0AlShXM83UUGe2DVr5TdAPEA1OA8m/g8zWp9x6On7gqufY+FatDbC3MDQg=="],
 
     "create-bklar": ["create-bklar@workspace:packages/create-bklar"],
+
+    "croner": ["croner@9.1.0", "", {}, "sha512-p9nwwR4qyT5W996vBZhdvBCnMhicY5ytZkR4D1Xj0wuTDEiMnjwR57Q3RXYY/s0EpX6Ay3vgIcfaR+ewGHsi+g=="],
 
     "cross-spawn": ["cross-spawn@7.0.6", "", { "dependencies": { "path-key": "^3.1.0", "shebang-command": "^2.0.0", "which": "^2.0.1" } }, "sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA=="],
 

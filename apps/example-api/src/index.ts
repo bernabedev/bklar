@@ -6,6 +6,7 @@ import { swagger } from "@bklarjs/swagger";
 import { Bklar, type InferContext } from "bklar";
 import { NotFoundError, UnauthorizedError } from "bklar/errors";
 import { z } from "zod";
+import { cron } from "@bklarjs/cron";
 
 const app = Bklar();
 
@@ -191,6 +192,30 @@ app.put(
     },
   }
 );
+
+app.use(
+  cron({
+    name: "execTest",
+    pattern: "* * * * * *", // every second
+    autoStart: false,
+    run: () => {
+      const time = new Date().toISOString();
+      console.log("Cron job executed", time);
+    },
+  })
+);
+
+app.post("/jobs/:name/stop", (ctx) => {
+  const { name } = ctx.params;
+  const job = ctx.state.cron[name];
+
+  if (!job) {
+    return ctx.json({ error: "Job not found" }, 404);
+  }
+
+  job.stop();
+  return ctx.json({ message: `Job '${name}' stopped.` });
+});
 
 swagger({ path: "/docs" }).setup(app);
 
