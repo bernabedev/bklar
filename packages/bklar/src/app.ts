@@ -286,7 +286,7 @@ export class BklarApp<Routes = {}> {
   }
 
   listen(
-    port: number | string,
+    port: number | string = 4000,
     callback?: (server: Server<any>) => void
   ): Server<any> {
     const loggingEnabled = this.options.logger !== false;
