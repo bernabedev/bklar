@@ -1,3 +1,4 @@
+import type { HeadersInit } from "bun";
 import { State } from "./types";
 
 export interface CookieOptions {
@@ -97,12 +98,13 @@ export class Context<T extends { query: any; params: any; body: any }> {
     let cookieString = `${name}=${value}`;
     if (options.domain) cookieString += `; Domain=${options.domain}`;
     if (options.path) cookieString += `; Path=${options.path}`;
-    if (options.expires) cookieString += `; Expires=${options.expires.toUTCString()}`;
+    if (options.expires)
+      cookieString += `; Expires=${options.expires.toUTCString()}`;
     if (options.maxAge) cookieString += `; Max-Age=${options.maxAge}`;
     if (options.httpOnly) cookieString += `; HttpOnly`;
     if (options.secure) cookieString += `; Secure`;
     if (options.sameSite) cookieString += `; SameSite=${options.sameSite}`;
-    
+
     this._setCookies.push(cookieString);
   }
 

@@ -49,7 +49,7 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "bunchee": "^4.0.0",
+    "bunchee": "^6.9.3",
     "typescript": "^5.0.0"
   },
   "publishConfig": {
