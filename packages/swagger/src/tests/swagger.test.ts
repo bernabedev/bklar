@@ -112,9 +112,9 @@ describe("@bklarjs/swagger Package Tests", () => {
     expect(response).toBeDefined();
 
     const schemaRef = response.content["application/json"].schema.$ref;
-    expect(schemaRef).toBe("#/components/schemas/GET_users_1_Response_200");
+    expect(schemaRef).toBe("#/components/schemas/GET_users_1_Res200");
 
-    const componentSchema = spec.components.schemas["GET_users_1_Response_200"];
+    const componentSchema = spec.components.schemas["GET_users_1_Res200"];
     expect(componentSchema.type).toBe("object");
     expect(componentSchema.properties.id.type).toBe("number");
     expect(componentSchema.properties.name.type).toBe("string");

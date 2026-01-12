@@ -1,7 +1,9 @@
 import type { BklarInstance } from "bklar";
 import type {
   OpenAPIObject,
-  ResponseObject,
+  OperationObject,
+  ParameterObject,
+  ReferenceObject,
   SchemaObject,
 } from "openapi3-ts/oas31";
 import { z } from "zod/v4";
@@ -9,27 +11,69 @@ import { z } from "zod/v4";
 const toJSONSchemaOptions = {
   unrepresentable: "any" as const,
   override: (ctx: any) => {
-    // Check if the current node in the schema tree is a ZodDate.
     if (ctx.zodSchema instanceof z.ZodDate) {
       ctx.jsonSchema.type = "string";
       ctx.jsonSchema.format = "date-time";
-      ctx.jsonSchema.description =
-        ctx.zodSchema.description ??
-        "Date in ISO 8601 format (e.g., 2024-01-01T00:00:00.000Z)";
     }
   },
 };
 
+/**
+ * Creates a safe, unique name for a schema component.
+ */
 function createSchemaName(
   path: string,
   method: string,
-  type: "Body" | "Response" | "Params" | "Query",
-  statusCode?: string
+  suffix: string
 ): string {
-  const pathName = path.replace(/[\/:]/g, "_").replace(/^_/, "");
-  const baseName = `${method.toUpperCase()}_${pathName}`;
-  if (type === "Response") return `${baseName}_Response_${statusCode}`;
-  return `${baseName}_${type}`;
+  const cleanPath = path
+    .replace(/\/+/g, "_") // Replace slashes with underscores
+    .replace(/[{}]/g, "") // Remove braces from params
+    .replace(/^_/, "") // Remove leading underscore
+    .replace(/_$/, ""); // Remove trailing underscore
+
+  return `${method.toUpperCase()}_${cleanPath}_${suffix}`;
+}
+
+/**
+ * Extracts and formats parameters (Path/Query) from route schemas.
+ */
+function processParameters(
+  schemas: any
+): (ParameterObject | ReferenceObject)[] {
+  const parameters: (ParameterObject | ReferenceObject)[] = [];
+
+  // Path Params
+  if (schemas?.params) {
+    const jsonSchema = z.toJSONSchema(schemas.params, toJSONSchemaOptions);
+    if (jsonSchema.type === "object" && jsonSchema.properties) {
+      for (const [key, prop] of Object.entries(jsonSchema.properties)) {
+        parameters.push({
+          name: key,
+          in: "path",
+          required: true, // Path params are always required
+          schema: prop as SchemaObject,
+        });
+      }
+    }
+  }
+
+  // Query Params
+  if (schemas?.query) {
+    const jsonSchema = z.toJSONSchema(schemas.query, toJSONSchemaOptions);
+    if (jsonSchema.type === "object" && jsonSchema.properties) {
+      for (const [key, prop] of Object.entries(jsonSchema.properties)) {
+        parameters.push({
+          name: key,
+          in: "query",
+          required: jsonSchema.required?.includes(key) || false,
+          schema: prop as SchemaObject,
+        });
+      }
+    }
+  }
+
+  return parameters;
 }
 
 export function generateOpenAPI(
@@ -47,83 +91,50 @@ export function generateOpenAPI(
     paths: {},
     components: {
       ...config.components,
-      schemas: {
-        ...(config.components?.schemas || {}),
-      },
+      schemas: config.components?.schemas || {},
     },
     security: config.security,
   };
 
-  if (!openApi.paths) {
-    openApi.paths = {};
-  }
-
-  if (!openApi.components!.schemas) {
-    openApi.components!.schemas = {};
-  }
+  const components = openApi.components!; // Guaranteed to exist above
 
   for (const route of app.routes) {
+    // Convert /users/:id to /users/{id}
     const path =
       "/" +
       route.segments
         .map((s) => (s.startsWith(":") ? `{${s.slice(1)}}` : s))
         .join("/");
-    if (!openApi.paths[path]) {
-      openApi.paths[path] = {};
+
+    if (!openApi.paths![path]) {
+      openApi.paths![path] = {};
     }
 
     const method = route.method.toLowerCase();
-    const operation: any = {
-      summary: route.options.doc?.summary,
-      description: route.options.doc?.description,
-      tags: route.options.doc?.tags,
-      parameters: [],
-      security: route.options.doc?.security,
+    const doc = route.options.doc || {};
+
+    const operation: OperationObject = {
+      summary: doc.summary,
+      description: doc.description,
+      tags: doc.tags,
+      security: doc.security,
+      parameters: processParameters(route.options.schemas),
+      responses: {}, // Filled below
     };
 
-    // --- Process Parameters using z.toJSONSchema ---
-    if (route.options.schemas?.params) {
-      const jsonSchema = z.toJSONSchema(
-        route.options.schemas.params,
-        toJSONSchemaOptions
-      );
-      if (jsonSchema.type === "object" && jsonSchema.properties) {
-        for (const [key, prop] of Object.entries(jsonSchema.properties)) {
-          operation.parameters.push({
-            name: key,
-            in: "path",
-            required: true,
-            schema: prop,
-          });
-        }
-      }
-    }
-    if (route.options.schemas?.query) {
-      const jsonSchema = z.toJSONSchema(
-        route.options.schemas.query,
-        toJSONSchemaOptions
-      );
-      if (jsonSchema.type === "object" && jsonSchema.properties) {
-        for (const [key, prop] of Object.entries(jsonSchema.properties)) {
-          operation.parameters.push({
-            name: key,
-            in: "query",
-            schema: prop,
-            required: jsonSchema.required?.includes(key),
-          });
-        }
-      }
-    }
-
-    // --- Process Request Body using z.toJSONSchema ---
+    // --- Process Request Body ---
     if (route.options.schemas?.body) {
       const schemaName = createSchemaName(path, method, "Body");
       const jsonSchema = z.toJSONSchema(
         route.options.schemas.body,
         toJSONSchemaOptions
       ) as SchemaObject;
-      openApi.components!.schemas![schemaName] = jsonSchema;
+
+      // Register Component
+      components.schemas![schemaName] = jsonSchema;
+
       operation.requestBody = {
+        required: true,
         content: {
           "application/json": {
             schema: { $ref: `#/components/schemas/${schemaName}` },
@@ -132,33 +143,27 @@ export function generateOpenAPI(
       };
     }
 
-    // --- Process Responses using z.toJSONSchema ---
-    const processedResponses: { [statusCode: string]: ResponseObject } = {};
-    const routeResponses = route.options.doc?.responses || {};
+    // --- Process Responses ---
+    const routeResponses = doc.responses || {};
+    const processedResponses: Record<string, any> = {};
 
-    for (const [statusCode, responseObject] of Object.entries(routeResponses)) {
-      const content = responseObject.content?.["application/json"];
-      const schemaOrZod = content?.schema;
+    for (const [code, resObj] of Object.entries(routeResponses)) {
+      const content = (resObj as any).content?.["application/json"];
+      const schema = content?.schema;
 
-      if (
-        schemaOrZod &&
-        typeof schemaOrZod === "object" &&
-        "_def" in schemaOrZod
-      ) {
-        const schemaName = createSchemaName(
-          path,
-          method,
-          "Response",
-          statusCode
-        );
+      // Check if schema is a Zod object/type
+      if (schema && typeof schema === "object" && "_def" in schema) {
+        const schemaName = createSchemaName(path, method, `Res${code}`);
         const jsonSchema = z.toJSONSchema(
-          schemaOrZod,
+          schema,
           toJSONSchemaOptions
         ) as SchemaObject;
-        openApi.components!.schemas![schemaName] = jsonSchema;
 
-        processedResponses[statusCode] = {
-          ...responseObject,
+        // Register Component
+        components.schemas![schemaName] = jsonSchema;
+
+        processedResponses[code] = {
+          ...(resObj as any),
           content: {
             "application/json": {
               schema: { $ref: `#/components/schemas/${schemaName}` },
@@ -166,16 +171,18 @@ export function generateOpenAPI(
           },
         };
       } else {
-        processedResponses[statusCode] = responseObject;
+        // Standard OpenAPI definition
+        processedResponses[code] = resObj;
       }
     }
 
+    // Default 200 OK if no responses defined
     operation.responses =
       Object.keys(processedResponses).length > 0
         ? processedResponses
-        : { "200": { description: "OK" } };
+        : { "200": { description: "Successful response" } };
 
-    (openApi.paths[path] as any)[method] = operation;
+    (openApi.paths![path] as any)[method] = operation;
   }
 
   return openApi;

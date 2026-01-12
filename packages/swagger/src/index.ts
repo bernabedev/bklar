@@ -8,13 +8,19 @@ import { generateOpenAPI } from "./openapi-generator";
 import { getScalarHTML, getSwaggerHTML } from "./ui";
 
 export interface SwaggerOptions {
+  /**
+   * The base path for documentation.
+   * @default "/docs"
+   */
   path?: string;
   /**
    * Add global bearer authentication to the API documentation.
-   * This will add a global "Authorize" button to the UI.
    * @default false
    */
   bearerAuth?: boolean;
+  /**
+   * OpenAPI specific configuration.
+   */
   openapi?: {
     title?: string;
     version?: string;
@@ -22,23 +28,38 @@ export interface SwaggerOptions {
     components?: ComponentsObject;
     security?: SecurityRequirementObject[];
   };
+  /**
+   * UI Configuration settings.
+   */
+  ui?: {
+    /** Enable/Disable Swagger UI. Default: true */
+    swagger?: boolean;
+    /** Enable/Disable Scalar UI. Default: true */
+    scalar?: boolean;
+    /** Scalar UI specific options */
+    scalarConfig?: {
+      theme?: "default" | "alternate" | "moon" | "purple" | "solarized";
+    };
+  };
 }
 
 export function swagger(options: SwaggerOptions = {}) {
   const config = {
     path: options.path || "/docs",
     openapi: options.openapi || {},
+    ui: {
+      swagger: options.ui?.swagger ?? true,
+      scalar: options.ui?.scalar ?? true,
+      scalarConfig: options.ui?.scalarConfig,
+    },
   };
 
-  // If bearerAuth is enabled, set up the security scheme and global security
+  // Configure Global Bearer Auth
   if (options.bearerAuth) {
-    if (!config.openapi.components) {
-      config.openapi.components = {};
-    }
-    if (!config.openapi.components.securitySchemes) {
-      config.openapi.components.securitySchemes = {};
-    }
-    // Define the bearerAuth security scheme
+    config.openapi.components = config.openapi.components || {};
+    config.openapi.components.securitySchemes =
+      config.openapi.components.securitySchemes || {};
+
     config.openapi.components.securitySchemes.bearerAuth = {
       type: "http",
       scheme: "bearer",
@@ -46,62 +67,69 @@ export function swagger(options: SwaggerOptions = {}) {
       description: "Enter your JWT in the format: Bearer <token>",
     };
 
-    // Apply bearerAuth security globally
-    if (!config.openapi.security) {
-      config.openapi.security = [];
-    }
+    config.openapi.security = config.openapi.security || [];
     config.openapi.security.push({ bearerAuth: [] });
   }
 
-  // Internal function to generate the OpenAPI spec
   const _generateSpec = (app: BklarInstance) => {
     return generateOpenAPI(app, config.openapi);
   };
 
-  // The setup function to be called on the app instance
   const setup = (app: BklarInstance) => {
-    // Generate the OpenAPI spec only once
     const openApiSpec = _generateSpec(app);
 
     const jsonPath = `${config.path}/json`;
     const swaggerPath = `${config.path}/swagger`;
     const scalarPath = `${config.path}/scalar`;
 
-    console.log(`[bklar-swagger] 📄 OpenAPI JSON available at ${jsonPath}`);
-    console.log(`[bklar-swagger] Swagger UI available at ${swaggerPath}`);
-    console.log(`[bklar-swagger] Scalar UI available at ${scalarPath}`);
-
-    // 1. Add the /json route
+    // 1. Serve the JSON Spec
     app.get(jsonPath, (ctx) => ctx.json(openApiSpec));
 
-    // 2. Add the /swagger route
-    app.get(
-      swaggerPath,
-      () =>
-        new Response(getSwaggerHTML(jsonPath), {
-          headers: { "Content-Type": "text/html" },
-        })
-    );
+    // 2. Serve Swagger UI
+    if (config.ui.swagger) {
+      const assetsPath = getAbsoluteFSPath();
 
-    // Serve Swagger's static assets
-    const swaggerAssetsPath = getAbsoluteFSPath();
-    app.get(
-      `${config.path}/swagger-ui.css`,
-      () => new Response(Bun.file(`${swaggerAssetsPath}/swagger-ui.css`))
-    );
-    app.get(
-      `${config.path}/swagger-ui-bundle.js`,
-      () => new Response(Bun.file(`${swaggerAssetsPath}/swagger-ui-bundle.js`))
-    );
+      // Serve UI HTML
+      app.get(
+        swaggerPath,
+        () =>
+          new Response(getSwaggerHTML(jsonPath), {
+            headers: { "Content-Type": "text/html" },
+          })
+      );
 
-    // 3. Add the /scalar route
-    app.get(
-      scalarPath,
-      () =>
-        new Response(getScalarHTML(jsonPath), {
-          headers: { "Content-Type": "text/html" },
-        })
-    );
+      // Serve Static Assets
+      app.get(
+        `${config.path}/swagger-ui.css`,
+        () => new Response(Bun.file(`${assetsPath}/swagger-ui.css`))
+      );
+      app.get(
+        `${config.path}/swagger-ui-bundle.js`,
+        () => new Response(Bun.file(`${assetsPath}/swagger-ui-bundle.js`))
+      );
+    }
+
+    // 3. Serve Scalar UI
+    if (config.ui.scalar) {
+      app.get(
+        scalarPath,
+        () =>
+          new Response(getScalarHTML(jsonPath, config.ui.scalarConfig), {
+            headers: { "Content-Type": "text/html" },
+          })
+      );
+    }
+
+    // Log available routes
+    if (config.ui.swagger || config.ui.scalar) {
+      const PORT = process.env.PORT || 4000;
+      console.log(`[bklar-swagger] 📖 Documentation ready:`);
+      if (config.ui.swagger)
+        console.log(`  ➜ Swagger: http://localhost:${PORT}${swaggerPath}`);
+      if (config.ui.scalar)
+        console.log(`  ➜ Scalar:  http://localhost:${PORT}${scalarPath}`);
+      console.log(`  ➜ JSON:    http://localhost:${PORT}${jsonPath}`);
+    }
   };
 
   return { setup, _generateSpec };
