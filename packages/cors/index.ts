@@ -39,12 +39,6 @@ export interface CorsOptions {
   maxAge?: number;
 }
 
-declare module "bklar" {
-  interface State {
-    corsHeaders?: Headers;
-  }
-}
-
 const toArray = (value?: string | string[]) =>
   Array.isArray(value) ? value : value?.split(",").map((s) => s.trim()) || [];
 
@@ -74,50 +68,74 @@ export function cors(options: CorsOptions = {}): Middleware {
     return false;
   };
 
-  const corsMiddleware: Middleware = (ctx) => {
+  return async (ctx, next) => {
     const requestOrigin = ctx.req.headers.get("Origin");
 
+    // 1. If no origin, strictly pass through
     if (!requestOrigin) {
-      return;
+      return next();
     }
 
-    const corsHeaders = new Headers();
-    corsHeaders.append("Vary", "Origin");
+    const headers = new Headers();
+    headers.append("Vary", "Origin");
 
+    // 2. Validate Origin
     if (!isOriginAllowed(requestOrigin)) {
-      return;
+      return next();
     }
 
-    corsHeaders.set("Access-Control-Allow-Origin", requestOrigin);
+    // 3. Set Allowed Origin and Credentials
+    headers.set("Access-Control-Allow-Origin", requestOrigin);
     if (config.credentials) {
-      corsHeaders.set("Access-Control-Allow-Credentials", "true");
+      headers.set("Access-Control-Allow-Credentials", "true");
     }
 
+    // 4. Handle Preflight Requests (OPTIONS)
     if (ctx.req.method === "OPTIONS") {
-      corsHeaders.set("Access-Control-Allow-Methods", config.methods);
+      headers.set("Access-Control-Allow-Methods", config.methods);
 
       if (config.maxAge) {
-        corsHeaders.set("Access-Control-Max-Age", config.maxAge.toString());
+        headers.set("Access-Control-Max-Age", config.maxAge.toString());
       }
 
       const requestedHeaders = ctx.req.headers.get(
         "Access-Control-Request-Headers"
       );
       if (requestedHeaders) {
-        corsHeaders.set("Access-Control-Allow-Headers", requestedHeaders);
+        headers.set("Access-Control-Allow-Headers", requestedHeaders);
       } else if (config.allowedHeaders) {
-        corsHeaders.set("Access-Control-Allow-Headers", config.allowedHeaders);
+        headers.set("Access-Control-Allow-Headers", config.allowedHeaders);
       }
 
-      return new Response(null, { status: 204, headers: corsHeaders });
+      return new Response(null, { status: 204, headers });
     }
 
+    // 5. Handle Exposed Headers for actual requests
     if (config.exposedHeaders) {
-      corsHeaders.set("Access-Control-Expose-Headers", config.exposedHeaders);
+      headers.set("Access-Control-Expose-Headers", config.exposedHeaders);
     }
 
-    ctx.state.corsHeaders = corsHeaders;
-  };
+    // 6. Execute downstream middleware/handler
+    const response = await next();
 
-  return corsMiddleware;
+    // 7. Inject headers into the response
+    if (response instanceof Response) {
+      for (const [key, value] of headers.entries()) {
+        response.headers.set(key, value);
+      }
+      return response;
+    }
+
+    // Fallback: If a passive middleware swallowed the response, check if the app context has a backup
+    // (Relies on bklar v2 internal fix for void middlewares)
+    if ((ctx as any)._res instanceof Response) {
+      const res = (ctx as any)._res as Response;
+      for (const [key, value] of headers.entries()) {
+        res.headers.set(key, value);
+      }
+      return res;
+    }
+
+    return response;
+  };
 }
