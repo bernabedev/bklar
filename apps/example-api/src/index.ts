@@ -1,6 +1,8 @@
 import { jwt, sign } from "@bklarjs/jwt";
-// import { rateLimit } from "@bklarjs/rate-limit";
-// import { staticServer } from "@bklarjs/static";
+import { cors } from "@bklarjs/cors";
+import { rateLimit } from "@bklarjs/rate-limit";
+import { staticFiles } from "@bklarjs/static";
+import { swagger } from "@bklarjs/swagger";
 import { Bklar, type InferContext } from "bklar";
 import { NotFoundError, UnauthorizedError } from "bklar/errors";
 import { z } from "zod";
@@ -28,9 +30,9 @@ app.use(async (ctx, next) => {
 });
 
 // --- 2. Plugins ---
-// app.use(cors({ origin: true }));
-// app.use(rateLimit({ max: 100 }));
-// app.use(staticServer({ root: "./public" }));
+app.use(cors({ origin: ["http://localhost:3000"] }));
+app.use(rateLimit({ max: 100 }));
+app.use(staticFiles({ root: "./public" }));
 
 const JWT_SECRET = "a-super-secret-key-that-should-be-in-an-env";
 
@@ -190,7 +192,7 @@ app.put(
   }
 );
 
-// swagger({ path: "/docs" }).setup(app);
+swagger({ path: "/docs" }).setup(app);
 
 app.listen(4000);
 

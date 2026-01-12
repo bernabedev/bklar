@@ -1,13 +1,95 @@
-POST http://localhost:4000/users
+### 1. Health Check
+GET http://localhost:4000/health
+
+---
+
+### 2. Static File (make sure ./public/styles.css exists)
+GET http://localhost:4000/static/styles.css
+
+---
+
+### 3. Get Users (default pagination)
+GET http://localhost:4000/users
+
+---
+
+### 4. Get Users (custom pagination)
+GET http://localhost:4000/users?page=2&limit=5
+
+---
+
+### 5. Get User by ID (success)
+GET http://localhost:4000/users/1
+
+---
+
+### 6. Get User by ID (not found)
+GET http://localhost:4000/users/999
+
+---
+
+### 7. Login (get JWT token)
+# @name login
+POST http://localhost:4000/login
 Content-Type: application/json
 
 {
-    "name": "John Doe",
-    "email": "john@example.com"
+  "email": "john.doe@example.com",
+  "password": "password123"
 }
 
-###
+---
 
+### 8. Login (invalid credentials – should fail 401)
+POST http://localhost:4000/login
+Content-Type: application/json
+
+{
+  "email": "john.doe@example.com",
+  "password": "wrong-password"
+}
+
+---
+
+### 9. Protected Profile (no token – should fail 401)
 GET http://localhost:4000/profile
-Authorization: Bearer my-secret-token
 
+---
+
+### 10. Protected Profile (with token)
+@token = {{login.response.body.token}}
+GET http://localhost:4000/profile
+Authorization: Bearer {{token}}
+
+---
+
+### 11. Update User (protected – success)
+PUT http://localhost:4000/users/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "John Updated"
+}
+
+---
+
+### 12. Update User (protected – invalid body, should fail validation)
+PUT http://localhost:4000/users/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": 123
+}
+
+---
+
+### 13. Update User (protected – invalid param, should fail validation)
+PUT http://localhost:4000/users/abc
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Invalid Param"
+}
