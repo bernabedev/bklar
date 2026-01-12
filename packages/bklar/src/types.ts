@@ -2,7 +2,6 @@ import type { Context } from "./context";
 import type { ValidatorAdapter } from "./validator";
 
 // Generic Inference Helper
-// Supports Zod (via _output) and others can be added or default to any
 export type Infer<T> = T extends { _output: infer O } ? O : any;
 
 export interface Schemas<T = any> {
@@ -17,7 +16,6 @@ export type InferContext<S extends Schemas> = Context<{
   body: S["body"] extends undefined ? never : Infer<S["body"]>;
 }>;
 
-// Handler can return Response or any JSON-serializable data
 export type Handler<S extends Schemas = {}, ResponseType = any> = (
   ctx: InferContext<S>
 ) => ResponseType | Promise<ResponseType>;
@@ -29,9 +27,18 @@ export type Middleware = (
   next: Next
 ) => Promise<Response | void>;
 
+export interface RouteDoc {
+  summary?: string;
+  description?: string;
+  tags?: string[];
+  responses?: Record<string, any>;
+  security?: Array<Record<string, string[]>>;
+}
+
 export interface RouteOptions<S extends Schemas> {
   schemas?: S;
   middlewares?: Middleware[];
+  doc?: RouteDoc;
 }
 
 export class ValidationError extends Error {
@@ -61,9 +68,9 @@ export interface BklarOptions {
 
 export interface State {}
 
-// Helper types for Client RPC
-export type InferInput<S extends Schemas> = {
-    query: S["query"] extends undefined ? never : Infer<S["query"]>;
-    params: S["params"] extends undefined ? never : Infer<S["params"]>;
-    body: S["body"] extends undefined ? never : Infer<S["body"]>;
-};
+// Improved InferInput to check for valid schema shape instead of undefined
+// This prevents 'Schemas' fallback from enforcing all keys
+export type InferInput<S extends Schemas> = 
+  (S["query"] extends { _output: any } ? { query: Infer<S["query"]> } : {}) &
+  (S["params"] extends { _output: any } ? { params: Infer<S["params"]> } : {}) &
+  (S["body"] extends { _output: any } ? { body: Infer<S["body"]> } : {});

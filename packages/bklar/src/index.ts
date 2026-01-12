@@ -1,4 +1,5 @@
-export { Bklar, type BklarInstance, type BklarApp } from "./app";
+export { Bklar, type BklarApp } from "./app";
+export type BklarInstance = import("./app").BklarApp<any>;
 export * from "./router";
 export * from "./types";
 export * from "./client";

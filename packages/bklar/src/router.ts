@@ -9,6 +9,7 @@ export interface MatchResult {
 export interface RouteInfo {
   method: string;
   path: string;
+  segments: string[];
   options: RouteOptions<any>;
 }
 
@@ -17,9 +18,9 @@ export class Router {
   private routes: RouteInfo[] = [];
 
   add(method: string, path: string, middlewares: Middleware[], options: RouteOptions<any> = {}) {
-    this.routes.push({ method, path, options });
-    
     const segments = path.split("/").filter(Boolean);
+    this.routes.push({ method, path, segments, options });
+    
     let currentNode = this.root;
 
     for (const segment of segments) {

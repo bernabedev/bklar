@@ -73,19 +73,18 @@ export class BklarApp<Routes = {}> {
 
     // 3. Handler Wrapper with Response Auto-Wrapping
     stack.push(async (ctx, next) => {
-      const res = await handler(ctx as any);
+      let res = await handler(ctx as any);
 
-      if (res instanceof Response) {
-        return res;
+      if (!(res instanceof Response)) {
+        if (typeof res === "object" || Array.isArray(res)) {
+          res = ctx.json(res);
+        } else if (typeof res === "string") {
+          res = ctx.text(res);
+        }
       }
 
-      // Auto-wrap JSON/Strings
-      if (typeof res === "object" || Array.isArray(res)) {
-        return ctx.json(res);
-      }
-      if (typeof res === "string") {
-        return ctx.text(res);
-      }
+      (ctx as any)._res = res;
+
       return res;
     });
 
@@ -262,8 +261,16 @@ export class BklarApp<Routes = {}> {
     const errorHandler = this.options.errorHandler || defaultErrorHandler;
 
     try {
-      const res = await dispatch(ctx);
+      let res = await dispatch(ctx);
+
+      if (res === undefined && (ctx as any)._res instanceof Response) {
+        res = (ctx as any)._res;
+      }
+
       if (res instanceof Response) return res;
+
+      console.log("DEBUG v2: Dispatch returned non-Response:", typeof res, res);
+
       return new Response("Internal Server Error", { status: 500 });
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -278,7 +285,10 @@ export class BklarApp<Routes = {}> {
     }
   }
 
-  listen(port: number | string, callback?: (server: Server) => void): Server {
+  listen(
+    port: number | string,
+    callback?: (server: Server<any>) => void
+  ): Server<any> {
     const loggingEnabled = this.options.logger !== false;
     const logger =
       typeof this.options.logger === "function"
@@ -319,13 +329,15 @@ export class BklarApp<Routes = {}> {
     if (callback) callback(server);
     return server;
   }
+
+  public get routes() {
+    return this.router.getRoutes();
+  }
 }
 
 export function Bklar(options?: BklarOptions) {
   return new BklarApp(options);
 }
-
-export type BklarInstance = BklarApp<any>;
 
 // Export for Type Inference
 export type InferRoutes<T> = T extends BklarApp<infer R> ? R : never;
