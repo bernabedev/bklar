@@ -11,6 +11,7 @@
     "@bklarjs/rate-limit": "workspace:*",
     "@bklarjs/static": "workspace:*",
     "@bklarjs/swagger": "workspace:*",
+    "@bklarjs/helmet": "workspace:*",
     "bklar": "workspace:*",
     "zod": "^4.0.0"
   }

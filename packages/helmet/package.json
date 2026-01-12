@@ -1,0 +1,56 @@
+{
+  "name": "@bklarjs/helmet",
+  "version": "1.0.0",
+  "description": "Secure your Bklar app by setting various HTTP headers (CSP, HSTS, XSS protection, etc).",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "keywords": [
+    "bklar",
+    "bun",
+    "helmet",
+    "security",
+    "headers",
+    "csp",
+    "hsts",
+    "middleware"
+  ],
+  "author": "Freilyn Bernabe <freilyn@bernabe.dev> (https://bernabe.dev)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bernabedev/bklar.git",
+    "directory": "packages/helmet"
+  },
+  "homepage": "https://github.com/bernabedev/bklar/tree/main/packages/helmet#readme",
+  "bugs": {
+    "url": "https://github.com/bernabedev/bklar/issues"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bunchee",
+    "prepublishOnly": "bun run build",
+    "test": "bun test"
+  },
+  "peerDependencies": {
+    "bklar": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "bklar": "workspace:*",
+    "bunchee": "^6.9.3",
+    "typescript": "^5.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
