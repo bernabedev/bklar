@@ -14,6 +14,7 @@
       "name": "example-api",
       "version": "1.0.0",
       "dependencies": {
+        "@bklarjs/compression": "workspace:*",
         "@bklarjs/cors": "workspace:*",
         "@bklarjs/helmet": "workspace:*",
         "@bklarjs/jwt": "workspace:*",
@@ -34,6 +35,19 @@
         "@types/bun": "latest",
         "bunchee": "^6.9.3",
         "typescript": "^5.0.0",
+      },
+    },
+    "packages/compression": {
+      "name": "@bklarjs/compression",
+      "version": "1.0.0",
+      "devDependencies": {
+        "@types/bun": "latest",
+        "bklar": "workspace:*",
+        "bunchee": "^6.9.3",
+        "typescript": "^5.0.0",
+      },
+      "peerDependencies": {
+        "bklar": "^2.0.0",
       },
     },
     "packages/cors": {
@@ -154,6 +168,8 @@
     "@babel/code-frame": ["@babel/code-frame@7.28.6", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.28.5", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-JYgintcMjRiCvS8mMECzaEn+m3PfoQiyqukOMCCVQtoJGYJw8j/8LBJEiqkHLkfwCcs74E3pbAUFNg7d9VNJ+Q=="],
 
     "@babel/helper-validator-identifier": ["@babel/helper-validator-identifier@7.28.5", "", {}, "sha512-qSs4ifwzKJSV39ucNjsvc6WVHs6b7S03sOh2OcHF9UHfVPqWWALUsNUVzhSBiItjRZoLHx7nIarVjqKVusUZ1Q=="],
+
+    "@bklarjs/compression": ["@bklarjs/compression@workspace:packages/compression"],
 
     "@bklarjs/cors": ["@bklarjs/cors@workspace:packages/cors"],
 

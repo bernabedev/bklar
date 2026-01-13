@@ -12,6 +12,7 @@
     "@bklarjs/static": "workspace:*",
     "@bklarjs/swagger": "workspace:*",
     "@bklarjs/helmet": "workspace:*",
+    "@bklarjs/compression": "workspace:*",
     "bklar": "workspace:*",
     "zod": "^4.0.0"
   }

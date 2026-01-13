@@ -8,6 +8,7 @@ import { NotFoundError, UnauthorizedError } from "bklar/errors";
 import { z } from "zod";
 import { cron } from "@bklarjs/cron";
 import { helmet } from "@bklarjs/helmet";
+import { compression } from "@bklarjs/compression";
 
 const app = Bklar();
 
@@ -30,6 +31,7 @@ app.use(async (ctx, next) => {
 
   return res;
 });
+app.use(compression());
 app.use(helmet());
 // --- 2. Plugins ---
 app.use(cors({ origin: ["http://localhost:3000"] }));
