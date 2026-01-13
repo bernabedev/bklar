@@ -1,0 +1,45 @@
+{
+  "name": "@bklarjs/logger",
+  "version": "1.0.0",
+  "description": "Enterprise-grade structured logging system for Bklar.",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "keywords": [
+    "bklar",
+    "bun",
+    "logger",
+    "structured-logging",
+    "json",
+    "observability"
+  ],
+  "author": "Freilyn Bernabe <freilyn@bernabe.dev> (https://bernabe.dev)",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bunchee",
+    "prepublishOnly": "bun run build",
+    "test": "bun test"
+  },
+  "peerDependencies": {
+    "bklar": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "bklar": "workspace:*",
+    "bunchee": "^6.9.3",
+    "typescript": "^5.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
