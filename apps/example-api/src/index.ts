@@ -11,30 +11,32 @@ import { helmet } from "@bklarjs/helmet";
 import { compression } from "@bklarjs/compression";
 import { upload } from "@bklarjs/upload";
 import { cache } from "@bklarjs/cache";
+import { logger } from "@bklarjs/logger";
 
-const app = Bklar();
+const app = Bklar({ logger: false });
 
 // --- 1. Global Middleware (Replacements for onRequest/onResponse hooks) ---
 // Corrected Logger Middleware using correct v2 pattern
-app.use(async (ctx, next) => {
-  const start = performance.now();
-  console.log(`-> ${ctx.req.method} ${ctx.req.url}`);
+// app.use(async (ctx, next) => {
+//   const start = performance.now();
+//   console.log(`-> ${ctx.req.method} ${ctx.req.url}`);
 
-  const res = await next();
+//   const res = await next();
 
-  const ms = performance.now() - start;
-  let status = 200;
-  if (res instanceof Response) {
-    status = res.status;
-  }
-  console.log(
-    `<- ${ctx.req.method} ${ctx.req.url} ${status} - ${ms.toFixed(2)}ms`
-  );
+//   const ms = performance.now() - start;
+//   let status = 200;
+//   if (res instanceof Response) {
+//     status = res.status;
+//   }
+//   console.log(
+//     `<- ${ctx.req.method} ${ctx.req.url} ${status} - ${ms.toFixed(2)}ms`
+//   );
 
-  return res;
-});
+//   return res;
+// });
 
 // --- 2. Plugins ---
+app.use(logger());
 app.use(cache());
 app.use(helmet());
 app.use(compression());

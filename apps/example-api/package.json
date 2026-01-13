@@ -15,6 +15,7 @@
     "@bklarjs/compression": "workspace:*",
     "@bklarjs/upload": "workspace:*",
     "@bklarjs/cache": "workspace:*",
+    "@bklarjs/logger": "workspace:*",
     "bklar": "workspace:*",
     "zod": "^4.0.0"
   }
