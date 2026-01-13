@@ -19,6 +19,11 @@ export interface SwaggerOptions {
    */
   bearerAuth?: boolean;
   /**
+   * If true, prints the documentation URLs to the console on startup.
+   * @default false
+   */
+  verbose?: boolean;
+  /**
    * OpenAPI specific configuration.
    */
   openapi?: {
@@ -46,6 +51,7 @@ export interface SwaggerOptions {
 export function swagger(options: SwaggerOptions = {}) {
   const config = {
     path: options.path || "/docs",
+    verbose: options.verbose ?? false,
     openapi: options.openapi || {},
     ui: {
       swagger: options.ui?.swagger ?? true,
@@ -121,8 +127,8 @@ export function swagger(options: SwaggerOptions = {}) {
     }
 
     // Log available routes
-    if (config.ui.swagger || config.ui.scalar) {
-      const PORT = process.env.PORT || 4000;
+    if (config.verbose && (config.ui.swagger || config.ui.scalar)) {
+      const PORT = process.env.PORT || 3000;
       console.log(`[bklar-swagger] 📖 Documentation ready:`);
       if (config.ui.swagger)
         console.log(`  ➜ Swagger: http://localhost:${PORT}${swaggerPath}`);
