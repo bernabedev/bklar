@@ -1,4 +1,4 @@
-import { type Server, type ServerWebSocket } from "bun";
+import { type Server } from "bun";
 import { Router } from "./router";
 import { Context } from "./context";
 import { compose } from "./utils/compose";
@@ -282,7 +282,10 @@ export class BklarApp<Routes = {}> {
     return res || new Response("Upgrade", { status: 101 });
   }
 
-  async handle(req: Request, server?: Server<WSData>): Promise<Response | undefined> {
+  async handle(
+    req: Request,
+    server?: Server<WSData>
+  ): Promise<Response | undefined> {
     const url = new URL(req.url);
     const ctx = new Context(req, {});
     ctx.query = Object.fromEntries(url.searchParams.entries());
@@ -373,7 +376,7 @@ export class BklarApp<Routes = {}> {
   }
 
   listen(
-    port: number | string = 4000,
+    port: number | string = 3000,
     callback?: (server: Server<any>) => void
   ): Server<any> {
     const loggingEnabled = this.options.logger !== false;
@@ -404,13 +407,13 @@ export class BklarApp<Routes = {}> {
         }
 
         const res = await this.handle(req, server);
-        
+
         // Don't log websocket upgrades (which return undefined)
         if (res && loggingEnabled) {
           const duration = performance.now() - start;
           logger(req, duration, res.status, ip);
         }
-        
+
         return res;
       },
       error: (error) => {
