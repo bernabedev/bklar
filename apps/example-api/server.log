@@ -1,5 +1,0 @@
-✅ Server listening on http://localhost:4000
--> GET http://localhost:4000/health
-<- GET http://localhost:4000/health 200 - 0.15ms
-DEBUG: Dispatch returned non-Response: undefined undefined
-[90m[2026-01-12 19:51:38][0m | [31m500[0m | [36mGET    [0m | /health                        | [33m1ms[0m | ::1

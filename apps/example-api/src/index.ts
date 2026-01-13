@@ -10,6 +10,7 @@ import { cron } from "@bklarjs/cron";
 import { helmet } from "@bklarjs/helmet";
 import { compression } from "@bklarjs/compression";
 import { upload } from "@bklarjs/upload";
+import { cache } from "@bklarjs/cache";
 
 const app = Bklar();
 
@@ -32,9 +33,11 @@ app.use(async (ctx, next) => {
 
   return res;
 });
-app.use(compression());
-app.use(helmet());
+
 // --- 2. Plugins ---
+app.use(cache());
+app.use(helmet());
+app.use(compression());
 app.use(cors({ origin: ["http://localhost:3000"] }));
 app.use(rateLimit({ max: 100 }));
 app.use(staticFiles({ root: "./public" }));

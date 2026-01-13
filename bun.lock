@@ -14,6 +14,7 @@
       "name": "example-api",
       "version": "1.0.0",
       "dependencies": {
+        "@bklarjs/cache": "workspace:*",
         "@bklarjs/compression": "workspace:*",
         "@bklarjs/cors": "workspace:*",
         "@bklarjs/helmet": "workspace:*",
@@ -36,6 +37,19 @@
         "@types/bun": "latest",
         "bunchee": "^6.9.3",
         "typescript": "^5.0.0",
+      },
+    },
+    "packages/cache": {
+      "name": "@bklarjs/cache",
+      "version": "1.0.0",
+      "devDependencies": {
+        "@types/bun": "latest",
+        "bklar": "workspace:*",
+        "bunchee": "^6.9.3",
+        "typescript": "^5.0.0",
+      },
+      "peerDependencies": {
+        "bklar": "^2.0.0",
       },
     },
     "packages/compression": {
@@ -177,24 +191,13 @@
         "bklar": "^2.0.0",
       },
     },
-    "packages/ws": {
-      "name": "@bklarjs/ws",
-      "version": "1.0.0",
-      "devDependencies": {
-        "@types/bun": "latest",
-        "bklar": "workspace:*",
-        "bunchee": "^6.9.3",
-        "typescript": "^5.0.0",
-      },
-      "peerDependencies": {
-        "bklar": "^2.0.0",
-      },
-    },
   },
   "packages": {
     "@babel/code-frame": ["@babel/code-frame@7.28.6", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.28.5", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-JYgintcMjRiCvS8mMECzaEn+m3PfoQiyqukOMCCVQtoJGYJw8j/8LBJEiqkHLkfwCcs74E3pbAUFNg7d9VNJ+Q=="],
 
     "@babel/helper-validator-identifier": ["@babel/helper-validator-identifier@7.28.5", "", {}, "sha512-qSs4ifwzKJSV39ucNjsvc6WVHs6b7S03sOh2OcHF9UHfVPqWWALUsNUVzhSBiItjRZoLHx7nIarVjqKVusUZ1Q=="],
+
+    "@bklarjs/cache": ["@bklarjs/cache@workspace:packages/cache"],
 
     "@bklarjs/compression": ["@bklarjs/compression@workspace:packages/compression"],
 
@@ -213,8 +216,6 @@
     "@bklarjs/swagger": ["@bklarjs/swagger@workspace:packages/swagger"],
 
     "@bklarjs/upload": ["@bklarjs/upload@workspace:packages/upload"],
-
-    "@bklarjs/ws": ["@bklarjs/ws@workspace:packages/ws"],
 
     "@fastify/deepmerge": ["@fastify/deepmerge@1.3.0", "", {}, "sha512-J8TOSBq3SoZbDhM9+R/u77hP93gz/rajSA+K2kGyijPpORPWUXHUpTaleoj+92As0S9uPRP7Oi8IqMf0u+ro6A=="],
 
