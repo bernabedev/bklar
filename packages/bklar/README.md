@@ -162,7 +162,35 @@ app.group(
 );
 ```
 
+### ⚡ WebSockets
+
+bklar provides first-class support for WebSockets, integrated directly into the core router and middleware system.
+
+```typescript
+app.ws("/chat", {
+  // 1. Run middlewares before upgrade (e.g. auth)
+  middlewares: [authMiddleware],
+
+  // 2. WebSocket lifecycle handlers
+  open(ws) {
+    console.log("Client connected");
+    ws.send("Welcome!");
+  },
+  message(ws, message) {
+    // Access full context via ws.data.ctx
+    const user = ws.data.ctx.state.user;
+    ws.send(`Echo: ${message}`);
+  },
+  close(ws, code, reason) {
+    console.log("Client disconnected");
+  },
+});
+```
+
+WebSockets in bklar share the same **Context**, **State**, and **Middlewares** as standard HTTP routes.
+
 ### 🔌 Lifecycle Hooks
+
 
 bklar provides a powerful hook system that allows you to tap into the request-response lifecycle at specific points. This is useful for advanced logic, plugins, performance monitoring, and more.
 
