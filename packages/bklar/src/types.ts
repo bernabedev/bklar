@@ -1,5 +1,6 @@
 import type { Context } from "./context";
 import type { ValidatorAdapter } from "./validator";
+import { type ServerWebSocket } from "bun";
 
 // Generic Inference Helper
 export type Infer<T> = T extends { _output: infer O } ? O : any;
@@ -64,13 +65,55 @@ export interface BklarOptions {
   logger?: boolean | Logger;
   errorHandler?: ErrorHandler;
   validator?: ValidatorAdapter;
+  websocket?: {
+    maxPayloadLength?: number;
+    idleTimeout?: number;
+    backpressureLimit?: number;
+    closeOnBackpressureLimit?: boolean;
+    publishToSelf?: boolean;
+    perMessageDeflate?:
+      | boolean
+      | {
+          compress?: boolean | "shared";
+          decompress?: boolean | "shared";
+        };
+  };
 }
 
 export interface State {}
 
 // Improved InferInput to check for valid schema shape instead of undefined
 // This prevents 'Schemas' fallback from enforcing all keys
-export type InferInput<S extends Schemas> = 
-  (S["query"] extends { _output: any } ? { query: Infer<S["query"]> } : {}) &
+export type InferInput<S extends Schemas> = (S["query"] extends {
+  _output: any;
+}
+  ? { query: Infer<S["query"]> }
+  : {}) &
   (S["params"] extends { _output: any } ? { params: Infer<S["params"]> } : {}) &
   (S["body"] extends { _output: any } ? { body: Infer<S["body"]> } : {});
+
+export interface WSData {
+  ctx: Context<any>;
+  _handlers: WSHandlers<WSData>;
+}
+
+export type WSContext<T = any> = ServerWebSocket<WSData>;
+
+export interface WSHandlers<T = any> {
+  open?: (ws: ServerWebSocket<T>) => void | Promise<void>;
+  message?: (
+    ws: ServerWebSocket<T>,
+    message: string | Buffer
+  ) => void | Promise<void>;
+  close?: (
+    ws: ServerWebSocket<T>,
+    code: number,
+    reason: string
+  ) => void | Promise<void>;
+  drain?: (ws: ServerWebSocket<T>) => void | Promise<void>;
+}
+
+export interface WSOptions<S extends Schemas>
+  extends RouteOptions<S>,
+    WSHandlers<WSData> {}
+

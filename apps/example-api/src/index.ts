@@ -69,6 +69,25 @@ app.post(
   }
 );
 
+app.ws("/chat", {
+  open(ws) {
+    console.log("Connected!");
+    ws.send("Welcome to the chat");
+  },
+  message(ws, msg) {
+    if (msg instanceof ArrayBuffer) {
+      ws.send(`Echo: ${new TextDecoder().decode(msg)}`);
+    }
+    const userId = msg === "user1" ? 1 : msg === "user2" ? 2 : null;
+    if (userId) {
+      ws.send(`Echo: ${userId}`);
+    }
+  },
+  close(ws) {
+    console.log("Disconnected");
+  },
+});
+
 const JWT_SECRET = "a-super-secret-key-that-should-be-in-an-env";
 
 // --- Mock Database and User Service ---

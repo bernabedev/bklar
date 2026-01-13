@@ -1,4 +1,4 @@
-import { type Server } from "bun";
+import { type Server, type ServerWebSocket } from "bun";
 import { Router } from "./router";
 import { Context } from "./context";
 import { compose } from "./utils/compose";
@@ -9,8 +9,12 @@ import {
   type RouteOptions,
   type Schemas,
   type InferInput,
+  type WSOptions,
+  type WSHandlers,
+  type WSData,
   ValidationError,
 } from "./types";
+
 import {
   defaultErrorHandler,
   ErrorType,
@@ -147,6 +151,36 @@ export class BklarApp<Routes = {}> {
     return this._ret<"patch", typeof path, S, Ret>();
   }
 
+  ws<S extends Schemas>(
+    path: string,
+    options: WSOptions<S>,
+    middlewares: Middleware[] = []
+  ) {
+    const fullPath = path.replace(/\/+/g, "/");
+    const stack: Middleware[] = [...middlewares];
+
+    // 1. Route specific middlewares from options
+    if (options.middlewares) {
+      stack.push(...options.middlewares);
+    }
+
+    // 2. Validation Middleware
+    if (options.schemas) {
+      stack.push(this.createValidationMiddleware(options.schemas));
+    }
+
+    // Extract WS handlers
+    const wsHandlers: WSHandlers = {
+      open: options.open,
+      message: options.message,
+      close: options.close,
+      drain: options.drain,
+    };
+
+    this.router.add("WS", fullPath, stack, options, wsHandlers);
+    return this;
+  }
+
   group(
     prefix: string,
     builder: (app: BklarApp<any>) => void,
@@ -168,6 +202,16 @@ export class BklarApp<Routes = {}> {
               handler,
               options,
               prefix,
+              middlewares
+            );
+            return receiver;
+          };
+        }
+        if (prop === "ws") {
+          return (path: string, options: WSOptions<any>) => {
+            target.ws(
+              (prefix + path).replace(/\/+/g, "/"),
+              options,
               middlewares
             );
             return receiver;
@@ -234,13 +278,57 @@ export class BklarApp<Routes = {}> {
   async request(path: string, options: RequestInit = {}): Promise<Response> {
     const url = new URL(path, "http://localhost");
     const req = new Request(url, options);
-    return this.handle(req);
+    const res = await this.handle(req);
+    return res || new Response("Upgrade", { status: 101 });
   }
 
-  async handle(req: Request): Promise<Response> {
+  async handle(req: Request, server?: Server<WSData>): Promise<Response | undefined> {
     const url = new URL(req.url);
     const ctx = new Context(req, {});
     ctx.query = Object.fromEntries(url.searchParams.entries());
+
+    const errorHandler = this.options.errorHandler || defaultErrorHandler;
+
+    // 0. WebSocket Upgrade Check
+    if (
+      req.method === "GET" &&
+      req.headers.get("Upgrade")?.toLowerCase() === "websocket"
+    ) {
+      const match = this.router.find("WS", url.pathname);
+
+      if (match) {
+        ctx.params = match.params;
+        const chain = [...this.globalMiddlewares, ...match.handlers];
+        const dispatch = compose(chain);
+
+        try {
+          const res = await dispatch(ctx);
+          if (res instanceof Response) return res;
+
+          if (server && match.wsHandlers) {
+            const success = server.upgrade(req, {
+              data: {
+                ctx,
+                _handlers: match.wsHandlers,
+              },
+            });
+            if (success) return undefined;
+          }
+
+          return new Response("WebSocket upgrade failed", { status: 500 });
+        } catch (error) {
+          if (error instanceof ValidationError) {
+            const validationError = new HttpError(
+              ErrorType.VALIDATION,
+              "Validation Error",
+              error.details
+            );
+            return errorHandler(validationError, ctx) as Response;
+          }
+          return errorHandler(error, ctx) as Response;
+        }
+      }
+    }
 
     // 1. Match Route
     const match = this.router.find(req.method, url.pathname);
@@ -258,7 +346,6 @@ export class BklarApp<Routes = {}> {
     }
 
     const dispatch = compose(chain);
-    const errorHandler = this.options.errorHandler || defaultErrorHandler;
 
     try {
       let res = await dispatch(ctx);
@@ -279,9 +366,9 @@ export class BklarApp<Routes = {}> {
           "Validation Error",
           error.details
         );
-        return errorHandler(validationError, ctx);
+        return errorHandler(validationError, ctx) as Response;
       }
-      return errorHandler(error, ctx);
+      return errorHandler(error, ctx) as Response;
     }
   }
 
@@ -295,8 +382,16 @@ export class BklarApp<Routes = {}> {
         ? this.options.logger
         : defaultLogger;
 
-    const server = Bun.serve({
+    const server = Bun.serve<WSData>({
       port: Number(port),
+      websocket: {
+        ...this.options.websocket,
+        open: (ws) => ws.data._handlers.open?.(ws),
+        message: (ws, message) => ws.data._handlers.message?.(ws, message),
+        close: (ws, code, reason) =>
+          ws.data._handlers.close?.(ws, code, reason),
+        drain: (ws) => ws.data._handlers.drain?.(ws),
+      },
       fetch: async (req, server) => {
         const start = performance.now();
 
@@ -308,12 +403,14 @@ export class BklarApp<Routes = {}> {
           req.headers.set("X-Client-IP", ip);
         }
 
-        const res = await this.handle(req);
-
-        if (loggingEnabled) {
+        const res = await this.handle(req, server);
+        
+        // Don't log websocket upgrades (which return undefined)
+        if (res && loggingEnabled) {
           const duration = performance.now() - start;
           logger(req, duration, res.status, ip);
         }
+        
         return res;
       },
       error: (error) => {

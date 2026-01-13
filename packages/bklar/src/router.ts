@@ -1,10 +1,12 @@
 import { RadixNode } from "./router/node";
-import type { Middleware, RouteOptions } from "./types";
+import type { Middleware, RouteOptions, WSHandlers } from "./types";
 
 export interface MatchResult {
   handlers: Middleware[];
   params: Record<string, string>;
+  wsHandlers?: WSHandlers;
 }
+
 
 export interface RouteInfo {
   method: string;
@@ -17,7 +19,7 @@ export class Router {
   root: RadixNode = new RadixNode();
   private routes: RouteInfo[] = [];
 
-  add(method: string, path: string, middlewares: Middleware[], options: RouteOptions<any> = {}) {
+  add(method: string, path: string, middlewares: Middleware[], options: RouteOptions<any> = {}, wsHandlers?: WSHandlers) {
     const segments = path.split("/").filter(Boolean);
     this.routes.push({ method, path, segments, options });
     
@@ -57,6 +59,10 @@ export class Router {
     }
     // Store the stack
     currentNode.handlers[method] = middlewares;
+    
+    if (wsHandlers) {
+      currentNode.wsHandlers[method] = wsHandlers;
+    }
   }
 
   find(method: string, path: string): MatchResult | null {
@@ -73,8 +79,10 @@ export class Router {
     return {
       handlers: node.handlers[method],
       params,
+      wsHandlers: node.wsHandlers[method],
     };
   }
+
 
   private _search(
     node: RadixNode,

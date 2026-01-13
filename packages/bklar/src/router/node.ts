@@ -1,4 +1,4 @@
-import type { Middleware } from "../types";
+import type { Middleware, WSHandlers } from "../types";
 
 export class RadixNode {
   children: Record<string, RadixNode> = {};
@@ -6,4 +6,6 @@ export class RadixNode {
   paramName: string | null = null;
   wildcardNode: RadixNode | null = null;
   handlers: Record<string, Middleware[]> = {};
+  wsHandlers: Record<string, WSHandlers> = {};
 }
+
