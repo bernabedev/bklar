@@ -39,6 +39,8 @@ Now that your server is running, here are a few things you can do:
   bun add @bklarjs/jwt
   ```
 
+````
+
 ## 📂 Project Structure
 
 A quick look at the files and directories included:
@@ -56,3 +58,4 @@ A quick look at the files and directories included:
 Find an issue or have a suggestion? [Open an issue](https://github.com/bernabedev/bklar/issues) on our GitHub repository.
 
 Happy coding!
+````

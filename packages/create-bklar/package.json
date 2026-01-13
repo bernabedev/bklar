@@ -1,12 +1,15 @@
 {
   "name": "create-bklar",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "The official command-line tool to bootstrap a new bklar web framework project.",
   "type": "module",
-  "bin": "index.ts",
+  "bin": {
+    "create-bklar": "./bin.js"
+  },
+  "main": "./dist/index.js",
   "files": [
-    "index.ts",
-    "template"
+    "dist",
+    "bin.js"
   ],
   "keywords": [
     "bklar",
@@ -32,14 +35,20 @@
   "engines": {
     "bun": ">=1.0.0"
   },
+  "scripts": {
+    "build": "bunchee",
+    "dev": "bun run src/index.ts",
+    "prepublishOnly": "bun run build"
+  },
   "dependencies": {
-    "chalk": "^5.3.0",
-    "execa": "^9.6.0",
+    "picocolors": "^1.1.0",
     "prompts": "^2.4.2"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "@types/prompts": "^2.4.9"
+    "@types/node": "^20.0.0",
+    "@types/prompts": "^2.4.9",
+    "bunchee": "^6.9.3",
+    "typescript": "^5.0.0"
   },
   "publishConfig": {
     "access": "public"
