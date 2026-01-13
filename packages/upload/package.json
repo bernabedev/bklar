@@ -1,0 +1,52 @@
+{
+  "name": "@bklarjs/upload",
+  "version": "1.0.0",
+  "description": "Multipart file upload middleware for Bklar.",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "keywords": [
+    "bklar",
+    "bun",
+    "upload",
+    "multipart",
+    "form-data",
+    "file",
+    "middleware"
+  ],
+  "author": "Freilyn Bernabe <freilyn@bernabe.dev> (https://bernabe.dev)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bernabedev/bklar.git",
+    "directory": "packages/upload"
+  },
+  "homepage": "https://github.com/bernabedev/bklar/tree/main/packages/upload#readme",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bunchee",
+    "prepublishOnly": "bun run build",
+    "test": "bun test"
+  },
+  "peerDependencies": {
+    "bklar": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "bklar": "workspace:*",
+    "bunchee": "^6.9.3",
+    "typescript": "^5.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
