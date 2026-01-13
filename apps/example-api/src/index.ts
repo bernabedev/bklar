@@ -9,6 +9,7 @@ import { z } from "zod";
 import { cron } from "@bklarjs/cron";
 import { helmet } from "@bklarjs/helmet";
 import { compression } from "@bklarjs/compression";
+import { upload } from "@bklarjs/upload";
 
 const app = Bklar();
 
@@ -37,6 +38,36 @@ app.use(helmet());
 app.use(cors({ origin: ["http://localhost:3000"] }));
 app.use(rateLimit({ max: 100 }));
 app.use(staticFiles({ root: "./public" }));
+const uploadMiddleware = upload({
+  dest: "./uploads",
+  maxSize: 5 * 1024 * 1024, // 5MB limit
+  types: ["image/png", "image/jpeg", "image/gif", "image/webp"], // Only allow images
+});
+
+app.post(
+  "/upload",
+  (ctx) => {
+    // Regular form fields are in ctx.body
+    const { username } = ctx.body;
+
+    // Files are in ctx.state.files
+    const avatar = ctx.state.files?.avatar;
+
+    if (!avatar) {
+      return ctx.json({ error: "Avatar is required" }, 400);
+    }
+
+    // If 'dest' is set, avatar is an UploadedFile object
+    return ctx.json({
+      message: "File uploaded!",
+      file: avatar,
+      // avatar.path -> "uploads/f47ac10b-58cc-4372-a567-0e02b2c3d479.png"
+    });
+  },
+  {
+    middlewares: [uploadMiddleware],
+  }
+);
 
 const JWT_SECRET = "a-super-secret-key-that-should-be-in-an-env";
 
