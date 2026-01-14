@@ -1,0 +1,44 @@
+---
+title: Migration
+description: Moving from Express or Hono.
+---
+
+# Migration Guide
+
+If you are coming from other frameworks, here is how concepts translate to Bklar.
+
+## From Express
+
+| Express        | Bklar                 | Notes                                            |
+| :------------- | :-------------------- | :----------------------------------------------- |
+| `req.body`     | `ctx.body`            | Bklar's is strongly typed if validation is used. |
+| `req.params`   | `ctx.params`          | -                                                |
+| `req.query`    | `ctx.query`           | -                                                |
+| `res.json({})` | `return ctx.json({})` | In Bklar, you **return** the response.           |
+| `next()`       | `return next()`       | Middleware must return the promise chain.        |
+
+**Middleware Pattern:**
+
+```typescript
+// Express
+app.use((req, res, next) => {
+  console.log("Log");
+  next();
+});
+
+// Bklar (Async/Await)
+app.use(async (ctx, next) => {
+  console.log("Log Before");
+  await next();
+  console.log("Log After");
+});
+```
+
+## From Hono
+
+Bklar and Hono share many similarities as modern fetch-based frameworks.
+
+- **Routing:** Both use standard methods (`.get`, `.post`).
+- **Validation:** Bklar has built-in Zod support via the `schemas` option, whereas Hono uses a separate validator middleware.
+- **Context:** `c` in Hono is `ctx` in Bklar.
+- **WebSockets:** Bklar's WebSocket syntax is slightly more integrated into the router instance (`app.ws`) rather than a separate upgrade handler.

@@ -1,0 +1,60 @@
+---
+title: Deployment
+description: Running Bklar in production.
+---
+
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+# Deployment
+
+Bklar apps are just Bun apps. You can deploy them anywhere Bun is supported.
+
+## Docker
+
+The most robust way to deploy is using Docker.
+
+```dockerfile title="Dockerfile"
+FROM oven/bun:1 as base
+WORKDIR /usr/src/app
+
+# Install dependencies
+COPY package.json bun.lockb ./
+RUN bun install --frozen-lockfile --production
+
+# Copy source
+COPY . .
+
+# Run
+USER bun
+EXPOSE 3000/tcp
+ENTRYPOINT [ "bun", "run", "src/index.ts" ]
+```
+
+Build and run:
+
+```bash
+docker build -t my-api .
+docker run -p 3000:3000 my-api
+```
+
+## Railway / Render
+
+Platforms like Railway and Render support Bun natively.
+
+1. Connect your GitHub repository.
+2. Set the **Build Command** to `bun install`.
+3. Set the **Start Command** to `bun run src/index.ts`.
+
+## VPS (Ubuntu/Debian)
+
+If managing your own server:
+
+1. Install Bun: `curl -fsSL https://bun.sh/install | bash`
+2. Clone your repo.
+3. Install deps: `bun install --production`
+4. Use a process manager like PM2 (Bun works well with it):
+
+```bash
+bun add -g pm2
+pm2 start src/index.ts --name "api" --interpreter ~/.bun/bin/bun
+```
