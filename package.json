@@ -13,7 +13,6 @@
     "typescript": "^5"
   },
   "workspaces": [
-    "packages/*",
-    "apps/*"
+    "packages/*"
   ]
 }
