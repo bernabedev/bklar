@@ -3,5 +3,6 @@
 @import "fumadocs-ui/css/preset.css";
 
 @theme {
-  --color-primary: oklch(64% 0.22 275);
+  --color-primary: oklch(52% 0.22 275);
+  --color-muted-foreground: oklch(55% 0.04 260);
 }
