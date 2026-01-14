@@ -1,33 +1,107 @@
 ---
-title: Welcome to Bklar
-description: The minimalist, high-performance framework for Bun.
+title: Introduction
+description: The minimalist, high-performance web framework for Bun.
 ---
 
-## Ecosystem
+import { Callout } from "fumadocs-ui/components/callout";
+import { Card, Cards } from "fumadocs-ui/components/card";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+# Welcome to Bklar 🐰
+
+**Bklar** (pronounced _buh-klar_) is a modern web framework built specifically for [Bun](https://bun.sh/).
+
+It is designed to be **incredibly fast** by leveraging native Bun APIs, while offering a **Developer Experience (DX)** comparable to sophisticated frameworks like NestJS or Hono, but with a much simpler surface area.
+
+## Why Bklar?
+
+<Cards>
+  <Card title="🚀 Native Speed" href="/docs/performance/compression">
+    Built directly on `Bun.serve` and `Bun.file`. No Node.js compatibility
+    layers slowing you down.
+  </Card>
+  <Card title="🛡️ Type Safe" href="/docs/core-concepts/validation">
+    First-class Zod integration. Input validation and type inference work out of
+    the box.
+  </Card>
+  <Card title="🔌 Battery Included" href="/docs/utilities/logger">
+    Everything you need (Logger, CORS, JWT, Rate Limit, Swagger) is available as
+    an official, optimized package.
+  </Card>
+  <Card title="⚡ Realtime" href="/docs/core-concepts/websockets">
+    Native WebSocket support integrated directly into the router. No complex
+    setup required.
+  </Card>
+</Cards>
+
+## Quick Look
+
+Here is a complete API with validation and Swagger documentation in just a few lines:
+
+```typescript
+import { Bklar } from "bklar";
+import { z } from "zod";
+
+const app = Bklar();
+
+app.get(
+  "/users/:id",
+  (ctx) => {
+    // ctx.params.id is strictly typed!
+    return ctx.json({ id: ctx.params.id, name: "Bun User" });
+  },
+  {
+    schemas: {
+      params: z.object({ id: z.coerce.number() }),
+    },
+    doc: {
+      summary: "Get User",
+      tags: ["Users"],
+    },
+  }
+);
+
+app.listen(3000);
+```
+
+## The Ecosystem
+
+Bklar isn't just a router; it's a suite of tools designed to work perfectly together.
 
 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-  <PluginCard
-    title="Security"
-    desc="Helmet, CORS, Rate Limit & JWT"
+  <Card
+    title="Security Suite"
+    description="Helmet, CORS, Rate Limit & JWT"
     href="/docs/security/helmet"
-    icon="🛡️"
   />
-  <PluginCard
-    title="Performance"
-    desc="Caching, Compression & Native Speed"
+  <Card
+    title="Performance Tools"
+    description="Caching, Compression & Static Files"
     href="/docs/performance/caching"
-    icon="⚡"
   />
-  <PluginCard
-    title="Realtime"
-    desc="Native WebSockets support"
-    href="/docs/core-concepts/websockets"
-    icon="🔌"
+  <Card
+    title="Utilities"
+    description="File Uploads, Cron Jobs & Logger"
+    href="/docs/utilities/upload"
   />
-  <PluginCard
+  <Card
     title="Documentation"
-    desc="Auto-generated OpenAPI & Swagger UI"
+    description="Auto-generated OpenAPI & Swagger UI"
     href="/docs/utilities/swagger"
-    icon="📝"
   />
 </div>
+
+## Getting Started
+
+Ready to build? Create your first project in seconds.
+
+<Tabs items={["CLI", "Manual"]}>
+  <Tab value="CLI">
+    The fastest way to start. ```bash bun create bklar my-app ```
+  </Tab>
+  <Tab value="Manual">
+    Add it to an existing project. ```bash bun add bklar zod ```
+  </Tab>
+</Tabs>
+
+<Callout title="Requirements">Bklar requires **Bun v1.0.0** or higher.</Callout>
