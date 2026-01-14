@@ -1,0 +1,40 @@
+---
+title: Compression
+description: Reduce response size with Gzip and Deflate.
+---
+
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+# Compression
+
+`@bklarjs/compression` uses **Bun's native** `gzipSync` and `deflateSync` to compress responses, reducing payload size by up to 70%.
+
+## Installation
+
+<Tabs items={["Bun", "NPM"]}>
+  <Tab value="Bun">```bash bun add @bklarjs/compression ```</Tab>
+  <Tab value="NPM">```bash npm install @bklarjs/compression ```</Tab>
+</Tabs>
+
+## Usage
+
+It automatically negotiates content encoding with the client via the `Accept-Encoding` header.
+
+```typescript
+import { compression } from "@bklarjs/compression";
+
+// Apply globally
+app.use(compression());
+
+app.get("/big-json", (ctx) => {
+  // This will be gzipped automatically if > 1KB
+  return ctx.json(Array(1000).fill({ id: 1, name: "item" }));
+});
+```
+
+## Configuration
+
+| Option      | Default               | Description                    |
+| :---------- | :-------------------- | :----------------------------- |
+| `threshold` | `1024`                | Minimum byte size to compress. |
+| `encodings` | `['gzip', 'deflate']` | Supported algorithms.          |

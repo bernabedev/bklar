@@ -1,0 +1,84 @@
+---
+title: Getting Started
+description: Start building with Bklar in seconds.
+---
+
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+
+# Getting Started
+
+Bklar is designed to be up and running instantly. The best way to start a new project is using our official CLI tool.
+
+## Automatic Installation
+
+We recommend using `bun create` to scaffold your project. It provides interactive templates for different use cases.
+
+<Steps>
+  <Step>
+    ### Run the CLI
+    
+    Open your terminal and run:
+
+    ```bash
+    bun create bklar my-app
+    ```
+
+  </Step>
+  
+  <Step>
+    ### Choose a Template
+    
+    The interactive wizard will ask you to choose a template:
+    
+    - **Minimal:** A single file setup. Great for microservices.
+    - **Modular:** A structured setup with folders for routes and controllers.
+    - **Custom:** Select specific plugins (CORS, JWT, Swagger, etc.) manually.
+  </Step>
+ 
+  <Step>
+    ### Start Development
+    
+    Navigate to your new project and start the server:
+
+    ```bash
+    cd my-app
+    bun run dev
+    ```
+
+    Your server will be listening at `http://localhost:3000`.
+
+  </Step>
+</Steps>
+
+## Manual Installation
+
+If you prefer to build from scratch, you can install the core package manually.
+
+<Tabs items={["Bun", "NPM", "PNPM"]}>
+  <Tab value="Bun">```bash bun add bklar zod ```</Tab>
+  <Tab value="NPM">```bash npm install bklar zod ```</Tab>
+  <Tab value="PNPM">```bash pnpm add bklar zod ```</Tab>
+</Tabs>
+
+**Note:** `zod` is a required peer dependency for validation.
+
+### Hello World
+
+Create an `index.ts` file:
+
+```typescript
+import { Bklar } from "bklar";
+
+const app = Bklar();
+
+app.get("/", (ctx) => {
+  return ctx.text("Hello from Bklar! 🐰");
+});
+
+app.listen(3000);
+```
+
+```
+
+```

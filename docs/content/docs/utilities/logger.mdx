@@ -1,0 +1,59 @@
+---
+title: Logger
+description: Enterprise-grade structured logging (JSON).
+---
+
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+# Logger
+
+A robust logging middleware that replaces the default console logger with structured JSON output (NDJSON) suitable for production (Datadog, CloudWatch), while keeping pretty logs for development.
+
+## Installation
+
+<Tabs items={["Bun", "NPM"]}>
+  <Tab value="Bun">```bash bun add @bklarjs/logger ```</Tab>
+  <Tab value="NPM">```bash npm install @bklarjs/logger ```</Tab>
+</Tabs>
+
+## Usage
+
+Recommended: Disable the default logger and use this package instead.
+
+```typescript
+import { Bklar } from "bklar";
+import { logger } from "@bklarjs/logger";
+
+const app = Bklar({ logger: false }); // 1. Disable built-in logger
+
+app.use(logger()); // 2. Enable structured logger
+
+app.get("/", (ctx) => {
+  // Use context logger (includes Request ID)
+  ctx.logger.info("Processing request...");
+  return ctx.text("ok");
+});
+```
+
+## Features
+
+- **Request ID:** Automatically generates or propagates `X-Request-Id`.
+- **Redaction:** Hides sensitive keys (`password`, `token`) automatically.
+- **Context Injection:** `ctx.logger` is pre-configured with current request metadata.
+
+## Configuration
+
+```typescript
+app.use(
+  logger({
+    // Force JSON even in development
+    format: "json",
+
+    // Custom keys to redact
+    redact: ["ssn", "credit_card"],
+
+    // Minimum log level
+    level: "warn",
+  })
+);
+```

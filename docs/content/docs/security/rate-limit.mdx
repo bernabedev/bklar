@@ -1,0 +1,47 @@
+---
+title: Rate Limiting
+description: Protect your API from brute-force attacks and abuse.
+---
+
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+# Rate Limit
+
+Limit the number of requests a client can make within a time window.
+
+## Installation
+
+<Tabs items={["Bun", "NPM"]}>
+  <Tab value="Bun">```bash bun add @bklarjs/rate-limit ```</Tab>
+  <Tab value="NPM">```bash npm install @bklarjs/rate-limit ```</Tab>
+</Tabs>
+
+## Usage
+
+```typescript
+import { rateLimit } from "@bklarjs/rate-limit";
+
+// Limit to 100 requests per 15 minutes
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: "Too many requests, please try again later.",
+  })
+);
+```
+
+## Custom Key Generator
+
+By default, it limits by IP. You can limit by API Key or User ID.
+
+```typescript
+app.use(
+  rateLimit({
+    keyGenerator: (ctx) => {
+      // Limit by Authenticated User ID
+      return ctx.state.jwt?.sub || ctx.req.headers.get("x-api-key");
+    },
+  })
+);
+```

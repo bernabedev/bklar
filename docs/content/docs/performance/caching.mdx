@@ -1,0 +1,62 @@
+---
+title: Caching
+description: Response caching with ETag support and pluggable stores.
+---
+
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+# Caching
+
+`@bklarjs/cache` caches successful GET responses to improve performance and reduce server load. It supports **ETags** (304 Not Modified) out of the box.
+
+## Installation
+
+<Tabs items={["Bun", "NPM"]}>
+  <Tab value="Bun">```bash bun add @bklarjs/cache ```</Tab>
+  <Tab value="NPM">```bash npm install @bklarjs/cache ```</Tab>
+</Tabs>
+
+## Usage
+
+```typescript
+import { cache } from "@bklarjs/cache";
+
+// Cache responses for 60 seconds
+app.use(cache({ ttl: 60000 }));
+
+app.get("/heavy-computation", async (ctx) => {
+  await Bun.sleep(1000); // Simulate slow operation
+  return ctx.json({ data: "result" });
+});
+```
+
+**Result:**
+
+- 1st Request: 1000ms (`X-Cache: MISS`)
+- 2nd Request: &lt;1ms (`X-Cache: HIT`)
+
+## Using Redis
+
+The package includes an in-memory store by default. To use Redis:
+
+```typescript
+import { createClient } from "redis";
+
+const redisClient = createClient();
+await redisClient.connect();
+
+const redisStore = {
+  async get(key) {
+    const val = await redisClient.get(key);
+    return val ? JSON.parse(val) : undefined;
+  },
+  async set(key, value, ttl) {
+    await redisClient.set(key, JSON.stringify(value), { EX: ttl / 1000 });
+  },
+  async delete(key) {
+    await redisClient.del(key);
+  },
+};
+
+app.use(cache({ store: redisStore }));
+```

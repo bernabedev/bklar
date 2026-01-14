@@ -1,0 +1,82 @@
+---
+title: Routing
+description: Define HTTP routes, groups, and parameters.
+---
+
+# Routing
+
+Bklar uses a high-performance **Radix Tree** router (similar to the one used by fastifiers) to match URLs efficiently.
+
+## Basic Routing
+
+You can define routes using standard HTTP methods: `.get()`, `.post()`, `.put()`, `.patch()`, `.delete()`.
+
+```typescript
+app.get("/", (ctx) => ctx.text("Home"));
+app.post("/users", (ctx) => ctx.json({ created: true }));
+```
+
+### Path Parameters
+
+Use a colon `:` to define dynamic parameters. These are available in `ctx.params`.
+
+```typescript
+// Matches /users/123
+app.get("/users/:id", (ctx) => {
+  const userId = ctx.params.id;
+  return ctx.json({ id: userId });
+});
+```
+
+### Wildcards
+
+Use `*` to match any remaining path.
+
+```typescript
+// Matches /files/images/logo.png
+app.get("/files/*", (ctx) => {
+  return ctx.text("Serving file...");
+});
+```
+
+## Route Groups
+
+Grouping allows you to organize routes under a common prefix and apply middlewares to all of them at once.
+
+```typescript
+import { cors } from "@bklarjs/cors";
+
+// Create a group with prefix "/api/v1"
+// The middleware array (optional) applies to the whole group
+app.group(
+  "/api/v1",
+  (router) => {
+    router.get("/users", (ctx) => {
+      return ctx.json([]);
+    });
+
+    router.post("/users", (ctx) => {
+      return ctx.json({ id: 1 });
+    });
+  },
+  [cors()]
+);
+```
+
+## Response Helpers
+
+Bklar provides helper methods on the context to return standard responses.
+
+| Helper                      | Description                                   | Content-Type       |
+| :-------------------------- | :-------------------------------------------- | :----------------- |
+| `ctx.json(data, status?)`   | Returns a JSON object.                        | `application/json` |
+| `ctx.text(string, status?)` | Returns plain text.                           | `text/plain`       |
+| `ctx.status(code)`          | Returns an empty response with a status code. | -                  |
+
+You can also simply return a standard `Response` object:
+
+```typescript
+app.get("/custom", () => {
+  return new Response("Custom Body", { headers: { "X-Custom": "1" } });
+});
+```

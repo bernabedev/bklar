@@ -1,0 +1,68 @@
+---
+title: Error Handling
+description: Managing errors and exceptions gracefully.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+# Error Handling
+
+Bklar provides a centralized error handling mechanism. If you throw an error in any handler or middleware, it is caught, processed, and returned as a standard JSON response.
+
+## Built-in Error Classes
+
+We provide a set of standard `HttpError` classes in `bklar/errors`. Using these ensures the correct HTTP status code is sent.
+
+```typescript
+import { NotFoundError, BadRequestError } from "bklar/errors";
+
+app.get("/item/:id", (ctx) => {
+  const item = findItem(ctx.params.id);
+
+  if (!item) {
+    // Automatically sends 404 with JSON: { message: "Item not found" }
+    throw new NotFoundError("Item not found");
+  }
+
+  if (item.isInvalid) {
+    // Automatically sends 400
+    throw new BadRequestError("Item is invalid");
+  }
+
+  return ctx.json(item);
+});
+```
+
+**Available Errors:**
+
+- `BadRequestError` (400)
+- `UnauthorizedError` (401)
+- `ForbiddenError` (403)
+- `NotFoundError` (404)
+- `MethodNotAllowedError` (405)
+- `ConflictError` (409)
+- `TooManyRequestsError` (429)
+- `InternalServerError` (500)
+
+## Custom Error Handler
+
+You can override the default error handler to integrate with logging tools (like Sentry) or change the response format.
+
+```typescript
+import { Bklar, HttpError } from "bklar";
+
+const app = Bklar({
+  errorHandler: (err, ctx) => {
+    // 1. Log the error
+    console.error("Global Error:", err);
+
+    // 2. Handle known HTTP errors
+    if (err instanceof HttpError) {
+      return err.toResponse();
+    }
+
+    // 3. Handle unknown errors
+    return ctx.json({ message: "Something went wrong!" }, 500);
+  },
+});
+```

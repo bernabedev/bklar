@@ -1,0 +1,60 @@
+---
+title: Swagger & OpenAPI
+description: Auto-generated API documentation UI.
+---
+
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+# Swagger
+
+`@bklarjs/swagger` inspects your routes and Zod schemas to automatically generate an OpenAPI 3.1 specification and serve interactive documentation UIs.
+
+## Installation
+
+<Tabs items={["Bun", "NPM"]}>
+  <Tab value="Bun">```bash bun add @bklarjs/swagger ```</Tab>
+  <Tab value="NPM">```bash npm install @bklarjs/swagger ```</Tab>
+</Tabs>
+
+## Setup
+
+Initialize Swagger **after** defining your routes but **before** `app.listen`.
+
+```typescript
+import { swagger } from "@bklarjs/swagger";
+
+// ... Define routes ...
+
+swagger({
+  path: "/docs",
+  bearerAuth: true, // Add "Authorize" button
+  openapi: {
+    title: "My API",
+    version: "1.0.0",
+  },
+}).setup(app);
+
+app.listen(3000);
+```
+
+Visit:
+
+- `http://localhost:3000/docs/swagger` (Swagger UI)
+- `http://localhost:3000/docs/scalar` (Scalar UI)
+
+## Documenting Routes
+
+Add a `doc` object to your route options.
+
+```typescript
+app.get("/users", (ctx) => ctx.json([]), {
+  doc: {
+    summary: "List users",
+    tags: ["Users"],
+    description: "Returns a paginated list of users.",
+    responses: {
+      "200": { description: "Success" },
+    },
+  },
+});
+```

@@ -1,0 +1,47 @@
+---
+title: File Upload
+description: Handle multipart/form-data uploads.
+---
+
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+# Upload
+
+Middleware for handling file uploads. It can save files to disk automatically or keep them in memory for processing.
+
+## Installation
+
+<Tabs items={["Bun", "NPM"]}>
+  <Tab value="Bun">```bash bun add @bklarjs/upload ```</Tab>
+  <Tab value="NPM">```bash npm install @bklarjs/upload ```</Tab>
+</Tabs>
+
+## Usage
+
+```typescript
+import { upload } from "@bklarjs/upload";
+
+// Save uploaded files to ./uploads
+app.post(
+  "/upload",
+  (ctx) => {
+    const file = ctx.state.files?.avatar;
+    return ctx.json({ savedAt: file.path });
+  },
+  {
+    middlewares: [upload({ dest: "./uploads" })],
+  }
+);
+```
+
+## Validation
+
+You can restrict file size and types.
+
+```typescript
+upload({
+  maxSize: 5 * 1024 * 1024, // 5MB
+  types: ["image/png", "image/jpeg"], // Only images
+  randomize: true, // Rename to UUID
+});
+```

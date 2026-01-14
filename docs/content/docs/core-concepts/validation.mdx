@@ -1,0 +1,76 @@
+---
+title: Validation
+description: End-to-end type safety with Zod.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+# Validation
+
+Bklar has first-class support for [Zod](https://zod.dev/). When you provide a schema, the framework automatically:
+
+1. **Validates** the incoming data (Body, Query, or Params).
+2. **Returns 400 Bad Request** automatically if validation fails.
+3. **Infers Types** for your handler, giving you full autocompletion.
+
+## Usage
+
+Pass a `schemas` object in the route options.
+
+```typescript
+import { z } from "zod";
+
+const createUserSchema = z.object({
+  username: z.string().min(3),
+  email: z.string().email(),
+  age: z.number().int().optional(),
+});
+
+app.post(
+  "/users",
+  (ctx) => {
+    // ctx.body is fully typed here!
+    // TS knows that email is a string and age is number | undefined
+    const { email, username } = ctx.body;
+
+    return ctx.json({ message: `Created user ${username}` });
+  },
+  {
+    schemas: {
+      body: createUserSchema,
+    },
+  }
+);
+```
+
+## Validating Query & Params
+
+You can validate multiple sources at once.
+
+```typescript
+app.get(
+  "/search/:category",
+  (ctx) => {
+    const { category } = ctx.params; // Typed
+    const { q, limit } = ctx.query; // Typed
+    return ctx.json({ category, q, limit });
+  },
+  {
+    schemas: {
+      params: z.object({
+        category: z.enum(["books", "movies"]),
+      }),
+      query: z.object({
+        q: z.string(),
+        limit: z.coerce.number().min(1).max(100).default(10),
+      }),
+    },
+  }
+);
+```
+
+<Callout title="Note on Coercion">
+  URL parameters and Query strings are strictly strings by default. Use
+  `z.coerce.number()` or `z.coerce.boolean()` to automatically convert them to
+  the correct type.
+</Callout>

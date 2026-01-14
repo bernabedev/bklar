@@ -1,0 +1,69 @@
+---
+title: WebSockets
+description: Real-time communication using native Bun WebSockets.
+---
+
+# WebSockets
+
+Bklar v2 includes native support for WebSockets, leveraging `Bun.serve` for maximum performance (7x faster than Node.js solutions). You define WebSocket routes just like HTTP routes.
+
+## Creating a WebSocket Route
+
+Use the `.ws()` method on your app instance.
+
+```typescript
+app.ws("/chat", {
+  open(ws) {
+    console.log("Client connected");
+    ws.send("Welcome!");
+    // Subscribe to a Pub/Sub topic
+    ws.subscribe("global");
+  },
+
+  message(ws, msg) {
+    // Broadcast to the "global" topic
+    ws.publish("global", `User said: ${msg}`);
+  },
+
+  close(ws) {
+    console.log("Client disconnected");
+  },
+});
+```
+
+## Accessing Context
+
+The `ws` object contains a `data` property where you can access the original request `Context`. This is useful for authentication.
+
+```typescript
+import { jwt } from "@bklarjs/jwt";
+
+// 1. Global Auth Middleware runs BEFORE the upgrade
+app.use(jwt({ secret: "s3cret" }));
+
+app.ws("/secure-chat", {
+  open(ws) {
+    // Access the user injected by JWT middleware
+    const user = ws.data.ctx.state.jwt;
+
+    console.log(`User ${user.sub} connected.`);
+    ws.send(`Hello, ${user.name}!`);
+  },
+});
+```
+
+## Pub/Sub
+
+Bklar exposes Bun's native Pub/Sub helpers directly on the app instance for easy broadcasting from HTTP routes to WebSocket clients.
+
+```typescript
+// HTTP Endpoint triggers a WS broadcast
+app.post("/alert", (ctx) => {
+  const { message } = ctx.body;
+
+  // Send to all clients subscribed to "alerts"
+  app.broadcast("alerts", message);
+
+  return ctx.text("Alert sent");
+});
+```

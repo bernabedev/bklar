@@ -1,0 +1,33 @@
+---
+title: Static Files
+description: Serve static assets efficiently.
+---
+
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+# Static
+
+Serve HTML, CSS, Images, and other static assets using Bun's optimized file system API.
+
+## Installation
+
+<Tabs items={["Bun", "NPM"]}>
+  <Tab value="Bun">```bash bun add @bklarjs/static ```</Tab>
+  <Tab value="NPM">```bash npm install @bklarjs/static ```</Tab>
+</Tabs>
+
+## Usage
+
+```typescript
+import { serveStatic } from "@bklarjs/static";
+
+// Serve files from the "public" folder at the root URL
+app.use(
+  serveStatic({
+    root: "public",
+    prefix: "/",
+  })
+);
+```
+
+Now requests to `http://localhost:3000/logo.png` will serve `public/logo.png`.

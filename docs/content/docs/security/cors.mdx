@@ -1,0 +1,53 @@
+---
+title: CORS
+description: Cross-Origin Resource Sharing middleware.
+---
+
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+# CORS
+
+The `@bklarjs/cors` package enables Cross-Origin Resource Sharing, allowing your API to be accessed from browsers running on different domains.
+
+## Installation
+
+<Tabs items={["Bun", "NPM"]}>
+  <Tab value="Bun">```bash bun add @bklarjs/cors ```</Tab>
+  <Tab value="NPM">```bash npm install @bklarjs/cors ```</Tab>
+</Tabs>
+
+## Usage
+
+Use it as global middleware to allow all origins (useful for development) or restrict it for production.
+
+```typescript
+import { Bklar } from "bklar";
+import { cors } from "@bklarjs/cors";
+
+const app = Bklar();
+
+app.use(
+  cors({
+    origin: "https://my-frontend.com", // Allow specific origin
+    methods: ["GET", "POST", "PUT", "DELETE"], // Allow methods
+    credentials: true, // Allow cookies
+  })
+);
+
+app.listen(3000);
+```
+
+## Options
+
+| Option           | Type                           | Default              | Description                         |
+| :--------------- | :----------------------------- | :------------------- | :---------------------------------- |
+| `origin`         | `string \| string[] \| RegExp` | `"*"`                | Allowed Origin(s).                  |
+| `methods`        | `string[]`                     | `['GET', 'POST'...]` | Allowed HTTP methods.               |
+| `allowedHeaders` | `string[]`                     | `*`                  | Allowed request headers.            |
+| `exposedHeaders` | `string[]`                     | `[]`                 | Headers accessible to the client.   |
+| `credentials`    | `boolean`                      | `false`              | Allow cookies/auth headers.         |
+| `maxAge`         | `number`                       | `undefined`          | Preflight cache duration (seconds). |
+
+```
+
+```

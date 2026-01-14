@@ -1,0 +1,66 @@
+---
+title: Helmet
+description: Secure your app with HTTP headers (CSP, HSTS, XSS Protection).
+---
+
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+# Helmet
+
+`@bklarjs/helmet` helps secure your application by setting various HTTP headers. It mitigates common attacks like Cross-Site Scripting (XSS) and Clickjacking.
+
+## Installation
+
+<Tabs items={["Bun", "NPM"]}>
+  <Tab value="Bun">```bash bun add @bklarjs/helmet ```</Tab>
+  <Tab value="NPM">```bash npm install @bklarjs/helmet ```</Tab>
+</Tabs>
+
+## Usage
+
+Applying `helmet()` with default settings is a great starting point for security.
+
+```typescript
+import { Bklar } from "bklar";
+import { helmet } from "@bklarjs/helmet";
+
+const app = Bklar();
+
+// Sets secure defaults (HSTS, No-Sniff, Frame-Options, etc.)
+app.use(helmet());
+
+app.listen(3000);
+```
+
+## Configuration
+
+You can enable/disable specific headers or configure Content Security Policy (CSP).
+
+```typescript
+app.use(
+  helmet({
+    // Enable CSP
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "https://fonts.googleapis.com"],
+      },
+    },
+
+    // Disable specific headers if needed
+    xFrameOptions: false,
+  })
+);
+```
+
+## Default Headers
+
+| Header                      | Value                                 | Purpose               |
+| :-------------------------- | :------------------------------------ | :-------------------- |
+| `X-DNS-Prefetch-Control`    | `off`                                 | Privacy               |
+| `X-Frame-Options`           | `SAMEORIGIN`                          | Anti-Clickjacking     |
+| `Strict-Transport-Security` | `max-age=15552000; includeSubDomains` | Force HTTPS           |
+| `X-Download-Options`        | `noopen`                              | IE8 Security          |
+| `X-Content-Type-Options`    | `nosniff`                             | Prevent MIME Sniffing |
+| `Referrer-Policy`           | `no-referrer`                         | Privacy               |

@@ -1,0 +1,69 @@
+---
+title: JWT Authentication
+description: Secure routes with JSON Web Tokens.
+---
+
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+# JWT
+
+The `@bklarjs/jwt` package provides middleware for validating JSON Web Tokens. It integrates with `ctx.state` to make the user payload easily accessible.
+
+## Installation
+
+<Tabs items={["Bun", "NPM"]}>
+  <Tab value="Bun">```bash bun add @bklarjs/jwt jose ```</Tab>
+  <Tab value="NPM">```bash npm install @bklarjs/jwt jose ```</Tab>
+</Tabs>
+
+## Usage
+
+### 1. Protecting Routes
+
+```typescript
+import { Bklar } from "bklar";
+import { jwt } from "@bklarjs/jwt";
+
+const app = Bklar();
+const auth = jwt({ secret: "your-secret-key" });
+
+app.get(
+  "/profile",
+  (ctx) => {
+    // Available if token is valid
+    const user = ctx.state.jwt;
+    return ctx.json({ id: user.sub, role: user.role });
+  },
+  {
+    middlewares: [auth],
+  }
+);
+```
+
+### 2. Signing Tokens
+
+We export helper functions to sign tokens easily.
+
+```typescript
+import { sign } from "@bklarjs/jwt";
+
+app.post("/login", async (ctx) => {
+  // ... validate user credentials ...
+
+  const token = await sign(
+    { sub: "123", role: "admin" }, // Payload
+    "your-secret-key", // Secret
+    { expiresIn: "2h" } // Options
+  );
+
+  return ctx.json({ token });
+});
+```
+
+## Configuration
+
+| Option        | Type              | Description                                                             |
+| :------------ | :---------------- | :---------------------------------------------------------------------- |
+| `secret`      | `string`          | **Required.** The secret key used to sign tokens.                       |
+| `passthrough` | `boolean`         | If `true`, invalid tokens won't throw error (useful for optional auth). |
+| `getToken`    | `(ctx) => string` | Custom function to extract token (default: Bearer header).              |

@@ -1,0 +1,44 @@
+---
+title: Cron Jobs
+description: Schedule background tasks.
+---
+
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+# Cron
+
+Run scheduled tasks within your application context.
+
+## Installation
+
+<Tabs items={["Bun", "NPM"]}>
+  <Tab value="Bun">```bash bun add @bklarjs/cron ```</Tab>
+  <Tab value="NPM">```bash npm install @bklarjs/cron ```</Tab>
+</Tabs>
+
+## Usage
+
+```typescript
+import { cron } from "@bklarjs/cron";
+
+app.use(
+  cron({
+    name: "cleanup",
+    pattern: "0 0 * * *", // Every midnight
+    run: async () => {
+      console.log("Cleaning up DB...");
+    },
+  })
+);
+```
+
+## Controlling Jobs
+
+You can start/stop jobs programmatically via endpoints.
+
+```typescript
+app.post("/jobs/stop", (ctx) => {
+  ctx.state.cron.cleanup.stop();
+  return ctx.text("Job stopped");
+});
+```

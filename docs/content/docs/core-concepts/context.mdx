@@ -1,0 +1,80 @@
+---
+title: Context
+description: The request context object.
+---
+
+# Context
+
+The `Context` object (often named `ctx`) is passed to every route handler and middleware. It wraps the native Request and provides utilities for managing state, parameters, and responses.
+
+## Properties
+
+### `ctx.req`
+
+The native [Request](https://developer.mozilla.org/en-US/docs/Web/API/Request) object. You can access headers, method, and URL from here.
+
+```typescript
+const userAgent = ctx.req.headers.get("User-Agent");
+const url = ctx.req.url;
+```
+
+### `ctx.body`
+
+The parsed request body.
+
+- If you use **Validation schemas**, this is strongly typed.
+- If not, it defaults to `any` (parsed JSON or Form Data).
+
+### `ctx.query`
+
+An object containing URL query parameters.
+
+```typescript
+// GET /search?q=bklar&page=2
+app.get("/search", (ctx) => {
+  console.log(ctx.query.q); // "bklar"
+  console.log(ctx.query.page); // "2"
+});
+```
+
+### `ctx.params`
+
+An object containing dynamic route parameters (e.g., `/users/:id`).
+
+### `ctx.state`
+
+A shared mutable object for passing data between middlewares and handlers (e.g., authenticated users).
+
+```typescript
+// Middleware
+app.use(async (ctx, next) => {
+  ctx.state.user = { id: 1, role: "admin" };
+  await next();
+});
+
+// Handler
+app.get("/me", (ctx) => {
+  return ctx.json(ctx.state.user);
+});
+```
+
+## Cookies
+
+The context provides helpers to read and set cookies.
+
+```typescript
+app.get("/", (ctx) => {
+  // Read
+  const session = ctx.getCookie("session_id");
+
+  // Write
+  ctx.setCookie("theme", "dark", {
+    httpOnly: true,
+    maxAge: 3600, // 1 hour
+    path: "/",
+    secure: true,
+  });
+
+  return ctx.text("Cookies set");
+});
+```
