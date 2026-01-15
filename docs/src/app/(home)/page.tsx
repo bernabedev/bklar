@@ -2,8 +2,8 @@ import { ArrowRight, Box, ShieldCheck, Zap } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = {
-  title: "Bklar - The minimalist, high-performance web framework for Bun",
-  description: "The minimalist, high-performance web framework for Bun",
+  title: "Bklar - High-Performance, Type-Safe Web Framework for Bun",
+  description: "Build robust APIs faster with Bklar. The minimalist web framework built natively for Bun featuring end-to-end type safety, Zod validation, and zero overhead.",
 };
 
 export default function HomePage() {
