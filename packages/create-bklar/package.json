@@ -1,6 +1,6 @@
 {
   "name": "create-bklar",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "The official command-line tool to bootstrap a new bklar web framework project.",
   "type": "module",
   "bin": {
