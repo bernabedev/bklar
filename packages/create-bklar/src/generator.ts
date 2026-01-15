@@ -7,7 +7,7 @@ export interface TemplateOptions {
 export function generatePackageJson(options: TemplateOptions) {
   const deps: Record<string, string> = {
     bklar: "^2.0.0",
-    zod: "^3.22.4",
+    zod: "^4.0.0",
   };
 
   const devDeps: Record<string, string> = {
@@ -25,12 +25,28 @@ export function generatePackageJson(options: TemplateOptions) {
     swagger: "@bklarjs/swagger",
     cron: "@bklarjs/cron",
     cache: "@bklarjs/cache",
+    "rate-limit": "@bklarjs/rate-limit",
+  };
+
+  // Plugin Version Map (Detected from monorepo packages)
+  const pluginVersions: Record<string, string> = {
+    "@bklarjs/cors": "^2.0.0",
+    "@bklarjs/helmet": "^1.0.0",
+    "@bklarjs/jwt": "^2.0.0",
+    "@bklarjs/logger": "^1.0.0",
+    "@bklarjs/upload": "^1.0.0",
+    "@bklarjs/swagger": "^2.0.0",
+    "@bklarjs/cron": "^1.0.0",
+    "@bklarjs/cache": "^1.0.0",
+    "@bklarjs/rate-limit": "^2.0.0",
   };
 
   options.plugins.forEach((p) => {
-    if (pluginMap[p]) deps[pluginMap[p]] = "^1.0.0"; // or latest version
+    if (pluginMap[p]) {
+      deps[pluginMap[p]] = pluginVersions[pluginMap[p]];
+    }
     // Specific overrides if needed
-    if (p === "jwt") deps["jose"] = "^5.2.0";
+    if (p === "jwt") deps["jose"] = "^6.0.0";
   });
 
   return {
