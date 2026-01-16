@@ -11,6 +11,8 @@ export enum ErrorType {
   INTERNAL_SERVER = "INTERNAL_SERVER",
   GONE = "GONE",
   TOO_MANY_REQUESTS = "TOO_MANY_REQUESTS",
+  UNPROCESSABLE_ENTITY = "UNPROCESSABLE_ENTITY",
+  SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE",
 }
 
 const ERROR_METADATA: Record<
@@ -48,6 +50,14 @@ const ERROR_METADATA: Record<
     statusCode: 500,
     defaultMessage: "Internal server error",
   },
+  [ErrorType.UNPROCESSABLE_ENTITY]: {
+    statusCode: 422,
+    defaultMessage: "Unprocessable Entity",
+  },
+  [ErrorType.SERVICE_UNAVAILABLE]: {
+    statusCode: 503,
+    defaultMessage: "Service Unavailable",
+  },
 };
 
 export class HttpError extends Error {
@@ -66,10 +76,12 @@ export class HttpError extends Error {
   }
 
   public toResponse(): Response {
-    const body: { message: string; errors?: any } = { message: this.message };
+    const body: Record<string, any> = { message: this.message };
+
     if (this.details) {
       body.errors = this.details;
     }
+
     return new Response(JSON.stringify(body), {
       status: this.statusCode,
       headers: { "Content-Type": "application/json" },
@@ -86,7 +98,7 @@ export function defaultErrorHandler(error: unknown): Response {
     return new HttpError(
       ErrorType.VALIDATION,
       "Validation failed",
-      error.flatten().fieldErrors
+      error.flatten().fieldErrors,
     ).toResponse();
   }
 
@@ -94,55 +106,67 @@ export function defaultErrorHandler(error: unknown): Response {
 }
 
 export class NotFoundError extends HttpError {
-  constructor(message?: string) {
-    super(ErrorType.NOT_FOUND, message);
+  constructor(message?: string, details?: any) {
+    super(ErrorType.NOT_FOUND, message, details);
   }
 }
 
 export class ForbiddenError extends HttpError {
-  constructor(message?: string) {
-    super(ErrorType.FORBIDDEN, message);
+  constructor(message?: string, details?: any) {
+    super(ErrorType.FORBIDDEN, message, details);
   }
 }
 
 export class ConflictError extends HttpError {
-  constructor(message?: string) {
-    super(ErrorType.CONFLICT, message);
+  constructor(message?: string, details?: any) {
+    super(ErrorType.CONFLICT, message, details);
   }
 }
 
 export class BadRequestError extends HttpError {
-  constructor(message?: string) {
-    super(ErrorType.BAD_REQUEST, message);
+  constructor(message?: string, details?: any) {
+    super(ErrorType.BAD_REQUEST, message, details);
   }
 }
 
 export class UnauthorizedError extends HttpError {
-  constructor(message?: string) {
-    super(ErrorType.UNAUTHORIZED, message);
+  constructor(message?: string, details?: any) {
+    super(ErrorType.UNAUTHORIZED, message, details);
   }
 }
 
 export class TooManyRequestsError extends HttpError {
-  constructor(message?: string) {
-    super(ErrorType.TOO_MANY_REQUESTS, message);
+  constructor(message?: string, details?: any) {
+    super(ErrorType.TOO_MANY_REQUESTS, message, details);
   }
 }
 
 export class GoneError extends HttpError {
-  constructor(message?: string) {
-    super(ErrorType.GONE, message);
+  constructor(message?: string, details?: any) {
+    super(ErrorType.GONE, message, details);
   }
 }
 
 export class InternalServerError extends HttpError {
-  constructor(message?: string) {
-    super(ErrorType.INTERNAL_SERVER, message);
+  constructor(message?: string, details?: any) {
+    super(ErrorType.INTERNAL_SERVER, message, details);
   }
 }
 
 export class MethodNotAllowedError extends HttpError {
-  constructor(message?: string) {
-    super(ErrorType.METHOD_NOT_ALLOWED, message);
+  constructor(message?: string, details?: any) {
+    super(ErrorType.METHOD_NOT_ALLOWED, message, details);
+  }
+}
+
+export class UnprocessableEntityError extends HttpError {
+  constructor(message?: string, details?: any) {
+    super(ErrorType.UNPROCESSABLE_ENTITY, message, details);
+  }
+}
+
+export class ServiceUnavailableError extends HttpError {
+  constructor(message?: string, details?: any) {
+    super(ErrorType.SERVICE_UNAVAILABLE, message, details);
   }
 }
