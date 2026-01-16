@@ -76,8 +76,8 @@ export function cors(options: CorsOptions = {}): Middleware {
       return next();
     }
 
-    const headers = new Headers();
-    headers.append("Vary", "Origin");
+    // Set persistent headers immediately
+    ctx.setHeader("Vary", "Origin");
 
     // 2. Validate Origin
     if (!isOriginAllowed(requestOrigin)) {
@@ -85,57 +85,38 @@ export function cors(options: CorsOptions = {}): Middleware {
     }
 
     // 3. Set Allowed Origin and Credentials
-    headers.set("Access-Control-Allow-Origin", requestOrigin);
+    ctx.setHeader("Access-Control-Allow-Origin", requestOrigin);
     if (config.credentials) {
-      headers.set("Access-Control-Allow-Credentials", "true");
+      ctx.setHeader("Access-Control-Allow-Credentials", "true");
     }
 
     // 4. Handle Preflight Requests (OPTIONS)
     if (ctx.req.method === "OPTIONS") {
-      headers.set("Access-Control-Allow-Methods", config.methods);
+      ctx.setHeader("Access-Control-Allow-Methods", config.methods);
 
       if (config.maxAge) {
-        headers.set("Access-Control-Max-Age", config.maxAge.toString());
+        ctx.setHeader("Access-Control-Max-Age", config.maxAge.toString());
       }
 
       const requestedHeaders = ctx.req.headers.get(
         "Access-Control-Request-Headers"
       );
       if (requestedHeaders) {
-        headers.set("Access-Control-Allow-Headers", requestedHeaders);
+        ctx.setHeader("Access-Control-Allow-Headers", requestedHeaders);
       } else if (config.allowedHeaders) {
-        headers.set("Access-Control-Allow-Headers", config.allowedHeaders);
+        ctx.setHeader("Access-Control-Allow-Headers", config.allowedHeaders);
       }
 
-      return new Response(null, { status: 204, headers });
+      // Use ctx.status to ensure headers are merged
+      return ctx.status(204);
     }
 
     // 5. Handle Exposed Headers for actual requests
     if (config.exposedHeaders) {
-      headers.set("Access-Control-Expose-Headers", config.exposedHeaders);
+      ctx.setHeader("Access-Control-Expose-Headers", config.exposedHeaders);
     }
 
     // 6. Execute downstream middleware/handler
-    const response = await next();
-
-    // 7. Inject headers into the response
-    if (response instanceof Response) {
-      for (const [key, value] of headers.entries()) {
-        response.headers.set(key, value);
-      }
-      return response;
-    }
-
-    // Fallback: If a passive middleware swallowed the response, check if the app context has a backup
-    // (Relies on bklar v2 internal fix for void middlewares)
-    if ((ctx as any)._res instanceof Response) {
-      const res = (ctx as any)._res as Response;
-      for (const [key, value] of headers.entries()) {
-        res.headers.set(key, value);
-      }
-      return res;
-    }
-
-    return response;
+    return next();
   };
 }
