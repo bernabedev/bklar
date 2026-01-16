@@ -18,12 +18,18 @@ export class Context<T extends { query: any; params: any; body: any }> {
   public query: T["query"] = {} as T["query"];
   public body: T["body"] = {} as T["body"];
   private bodyParsed = false;
+  // Store persistent headers to be merged into the response
+  public _headers: Headers = new Headers();
   // Store cookies to be set in the response
   public _setCookies: string[] = [];
 
   constructor(req: Request, params: T["params"]) {
     this.req = req;
     this.params = params;
+  }
+
+  setHeader(key: string, value: string) {
+    this._headers.set(key, value);
   }
 
   async parseBody() {
@@ -56,6 +62,7 @@ export class Context<T extends { query: any; params: any; body: any }> {
   ): Response {
     const responseHeaders = new Headers(headers);
     responseHeaders.set("Content-Type", "application/json");
+    this._mergeHeaders(responseHeaders);
     this._appendCookies(responseHeaders);
     return new Response(JSON.stringify(data), {
       status,
@@ -70,6 +77,7 @@ export class Context<T extends { query: any; params: any; body: any }> {
   ): Response {
     const responseHeaders = new Headers(headers);
     responseHeaders.set("Content-Type", "text/plain;charset=UTF-8");
+    this._mergeHeaders(responseHeaders);
     this._appendCookies(responseHeaders);
     return new Response(data, {
       status,
@@ -79,6 +87,7 @@ export class Context<T extends { query: any; params: any; body: any }> {
 
   status(status: number, headers: HeadersInit = {}): Response {
     const responseHeaders = new Headers(headers);
+    this._mergeHeaders(responseHeaders);
     this._appendCookies(responseHeaders);
     return new Response(null, { status, headers: responseHeaders });
   }
@@ -112,5 +121,13 @@ export class Context<T extends { query: any; params: any; body: any }> {
     for (const cookie of this._setCookies) {
       headers.append("Set-Cookie", cookie);
     }
+  }
+
+  private _mergeHeaders(headers: Headers) {
+    this._headers.forEach((value, key) => {
+      if (!headers.has(key)) {
+        headers.set(key, value);
+      }
+    });
   }
 }

@@ -1,19 +1,19 @@
 import { type Server } from "bun";
-import { Router } from "./router";
 import { Context } from "./context";
-import { compose } from "./utils/compose";
+import { Router } from "./router";
 import {
+  ValidationError,
   type BklarOptions,
   type Handler,
+  type InferInput,
   type Middleware,
   type RouteOptions,
   type Schemas,
-  type InferInput,
-  type WSOptions,
-  type WSHandlers,
   type WSData,
-  ValidationError,
+  type WSHandlers,
+  type WSOptions,
 } from "./types";
+import { compose } from "./utils/compose";
 
 import {
   defaultErrorHandler,
@@ -60,7 +60,7 @@ export class BklarApp<Routes = {}> {
     handler: Handler<any, any>,
     options: RouteOptions<any> = {},
     prefix: string = "",
-    middlewares: Middleware[] = []
+    middlewares: Middleware[] = [],
   ) {
     const fullPath = (prefix + path).replace(/\/+/g, "/");
     const stack: Middleware[] = [...middlewares];
@@ -100,7 +100,7 @@ export class BklarApp<Routes = {}> {
     Method extends string,
     Path extends string,
     S extends Schemas,
-    Ret
+    Ret,
   >(): // phantom params for inference
   BklarApp<Routes & { [K in Path]: RouteType<Method, S, Ret> }> {
     return this as any;
@@ -109,7 +109,7 @@ export class BklarApp<Routes = {}> {
   get<S extends Schemas, Ret>(
     path: string,
     handler: Handler<S, Ret>,
-    options?: RouteOptions<S>
+    options?: RouteOptions<S>,
   ) {
     this._add("GET", path, handler, options);
     return this._ret<"get", typeof path, S, Ret>();
@@ -118,7 +118,7 @@ export class BklarApp<Routes = {}> {
   post<S extends Schemas, Ret>(
     path: string,
     handler: Handler<S, Ret>,
-    options?: RouteOptions<S>
+    options?: RouteOptions<S>,
   ) {
     this._add("POST", path, handler, options);
     return this._ret<"post", typeof path, S, Ret>();
@@ -127,7 +127,7 @@ export class BklarApp<Routes = {}> {
   put<S extends Schemas, Ret>(
     path: string,
     handler: Handler<S, Ret>,
-    options?: RouteOptions<S>
+    options?: RouteOptions<S>,
   ) {
     this._add("PUT", path, handler, options);
     return this._ret<"put", typeof path, S, Ret>();
@@ -136,7 +136,7 @@ export class BklarApp<Routes = {}> {
   delete<S extends Schemas, Ret>(
     path: string,
     handler: Handler<S, Ret>,
-    options?: RouteOptions<S>
+    options?: RouteOptions<S>,
   ) {
     this._add("DELETE", path, handler, options);
     return this._ret<"delete", typeof path, S, Ret>();
@@ -145,7 +145,7 @@ export class BklarApp<Routes = {}> {
   patch<S extends Schemas, Ret>(
     path: string,
     handler: Handler<S, Ret>,
-    options?: RouteOptions<S>
+    options?: RouteOptions<S>,
   ) {
     this._add("PATCH", path, handler, options);
     return this._ret<"patch", typeof path, S, Ret>();
@@ -154,7 +154,7 @@ export class BklarApp<Routes = {}> {
   ws<S extends Schemas>(
     path: string,
     options: WSOptions<S>,
-    middlewares: Middleware[] = []
+    middlewares: Middleware[] = [],
   ) {
     const fullPath = path.replace(/\/+/g, "/");
     const stack: Middleware[] = [...middlewares];
@@ -184,7 +184,7 @@ export class BklarApp<Routes = {}> {
   group(
     prefix: string,
     builder: (app: BklarApp<any>) => void,
-    middlewares: Middleware[] = []
+    middlewares: Middleware[] = [],
   ) {
     const proxy = new Proxy(this, {
       get: (target, prop, receiver) => {
@@ -194,7 +194,7 @@ export class BklarApp<Routes = {}> {
           return (
             path: string,
             handler: Handler<any, any>,
-            options?: RouteOptions<any>
+            options?: RouteOptions<any>,
           ) => {
             target._add(
               (prop as string).toUpperCase(),
@@ -202,7 +202,7 @@ export class BklarApp<Routes = {}> {
               handler,
               options,
               prefix,
-              middlewares
+              middlewares,
             );
             return receiver;
           };
@@ -212,7 +212,7 @@ export class BklarApp<Routes = {}> {
             target.ws(
               (prefix + path).replace(/\/+/g, "/"),
               options,
-              middlewares
+              middlewares,
             );
             return receiver;
           };
@@ -221,12 +221,12 @@ export class BklarApp<Routes = {}> {
           return (
             subPrefix: string,
             subBuilder: any,
-            subMiddlewares: any = []
+            subMiddlewares: any = [],
           ) => {
             target.group(
               (prefix + subPrefix).replace(/\/+/g, "/"),
               subBuilder,
-              [...middlewares, ...subMiddlewares]
+              [...middlewares, ...subMiddlewares],
             );
             return receiver;
           };
@@ -255,7 +255,7 @@ export class BklarApp<Routes = {}> {
         if (!schema) continue;
 
         const result = await Promise.resolve(
-          this.validator.validate(schema, data)
+          this.validator.validate(schema, data),
         );
 
         if (!result.success) {
@@ -284,7 +284,7 @@ export class BklarApp<Routes = {}> {
 
   async handle(
     req: Request,
-    server?: Server<WSData>
+    server?: Server<WSData>,
   ): Promise<Response | undefined> {
     const url = new URL(req.url);
     const ctx = new Context(req, {});
@@ -306,7 +306,27 @@ export class BklarApp<Routes = {}> {
 
         try {
           const res = await dispatch(ctx);
-          if (res instanceof Response) return res;
+          let finalResponse: Response | undefined;
+
+          if (res instanceof Response) {
+            finalResponse = res;
+          } else if ((ctx as any)._res instanceof Response) {
+            finalResponse = (ctx as any)._res;
+          }
+
+          if (finalResponse) {
+            ctx._headers.forEach((value, key) => {
+              if (!finalResponse!.headers.has(key)) {
+                finalResponse!.headers.set(key, value);
+              }
+            });
+
+            for (const cookie of ctx._setCookies) {
+              finalResponse.headers.append("Set-Cookie", cookie);
+            }
+
+            return finalResponse;
+          }
 
           if (server && match.wsHandlers) {
             const success = server.upgrade(req, {
@@ -324,7 +344,7 @@ export class BklarApp<Routes = {}> {
             const validationError = new HttpError(
               ErrorType.VALIDATION,
               "Validation Error",
-              error.details
+              error.details,
             );
             return errorHandler(validationError, ctx) as Response;
           }
@@ -363,21 +383,35 @@ export class BklarApp<Routes = {}> {
 
       return new Response("Internal Server Error", { status: 500 });
     } catch (error) {
+      let res: Response;
       if (error instanceof ValidationError) {
         const validationError = new HttpError(
           ErrorType.VALIDATION,
           "Validation Error",
-          error.details
+          error.details,
         );
-        return errorHandler(validationError, ctx) as Response;
+        res = errorHandler(validationError, ctx) as Response;
+      } else {
+        res = errorHandler(error, ctx) as Response;
       }
-      return errorHandler(error, ctx) as Response;
+
+      // Merge persistent headers
+      ctx._headers.forEach((value, key) => {
+        res.headers.set(key, value);
+      });
+
+      // Append cookies
+      for (const cookie of ctx._setCookies) {
+        res.headers.append("Set-Cookie", cookie);
+      }
+
+      return res;
     }
   }
 
   listen(
     port: number | string = 3000,
-    callback?: (server: Server<any>) => void
+    callback?: (server: Server<any>) => void,
   ): Server<any> {
     const loggingEnabled = this.options.logger !== false;
     const logger =
@@ -423,7 +457,7 @@ export class BklarApp<Routes = {}> {
     });
 
     console.log(
-      `✅ Server listening on http://${server.hostname}:${server.port}`
+      `✅ Server listening on http://${server.hostname}:${server.port}`,
     );
 
     if (callback) callback(server);
