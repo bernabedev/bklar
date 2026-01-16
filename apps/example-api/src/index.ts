@@ -1,17 +1,17 @@
-import { jwt, sign } from "@bklarjs/jwt";
+import { cache } from "@bklarjs/cache";
+import { compression } from "@bklarjs/compression";
 import { cors } from "@bklarjs/cors";
+import { cron } from "@bklarjs/cron";
+import { helmet } from "@bklarjs/helmet";
+import { jwt, sign } from "@bklarjs/jwt";
+import { logger } from "@bklarjs/logger";
 import { rateLimit } from "@bklarjs/rate-limit";
 import { staticFiles } from "@bklarjs/static";
 import { swagger } from "@bklarjs/swagger";
-import { Bklar, type InferContext } from "bklar";
-import { NotFoundError, UnauthorizedError } from "bklar/errors";
-import { z } from "zod";
-import { cron } from "@bklarjs/cron";
-import { helmet } from "@bklarjs/helmet";
-import { compression } from "@bklarjs/compression";
 import { upload } from "@bklarjs/upload";
-import { cache } from "@bklarjs/cache";
-import { logger } from "@bklarjs/logger";
+import { Bklar, type InferContext } from "bklar";
+import { ForbiddenError, NotFoundError, UnauthorizedError } from "bklar/errors";
+import { z } from "zod";
 
 const app = Bklar({ logger: false });
 
@@ -71,7 +71,7 @@ app.post(
   },
   {
     middlewares: [uploadMiddleware],
-  }
+  },
 );
 
 app.ws("/chat", {
@@ -143,8 +143,12 @@ app.get(
       tags: ["Health"],
       description: "Health check",
     },
-  }
+  },
 );
+
+app.get("/error", () => {
+  throw new ForbiddenError("Access denied");
+});
 
 const userSchema = z.object({
   id: z.number(),
@@ -181,7 +185,7 @@ app.get(
     schemas: {
       params: z.object({ id: z.coerce.number() }),
     },
-  }
+  },
 );
 
 // --- Login Route ---
@@ -201,14 +205,14 @@ app.post(
       { sub: user.id.toString(), email: user.email },
       JWT_SECRET,
       "HS256",
-      { expiresIn: "1h" }
+      { expiresIn: "1h" },
     );
 
     return { token };
   },
   {
     schemas: { body: loginSchema },
-  }
+  },
 );
 
 // --- Protected Routes ---
@@ -227,7 +231,7 @@ app.get(
   },
   {
     middlewares: [authMiddleware],
-  }
+  },
 );
 
 // Keep one using ctx.json for backward compatibility demonstration
@@ -248,7 +252,7 @@ app.put(
       tags: ["Users"],
       summary: "Update a user (protected)",
     },
-  }
+  },
 );
 
 app.use(
@@ -260,7 +264,7 @@ app.use(
       const time = new Date().toISOString();
       console.log("Cron job executed", time);
     },
-  })
+  }),
 );
 
 app.post("/jobs/:name/stop", (ctx) => {
