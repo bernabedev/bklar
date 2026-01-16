@@ -12,7 +12,7 @@
     },
     "packages/bklar": {
       "name": "bklar",
-      "version": "2.0.0",
+      "version": "2.0.2",
       "dependencies": {
         "zod": "^4.0.0",
       },
@@ -50,17 +50,17 @@
     },
     "packages/cors": {
       "name": "@bklarjs/cors",
-      "version": "2.0.0",
+      "version": "2.0.2",
       "devDependencies": {
         "bklar": "workspace:*",
       },
       "peerDependencies": {
-        "bklar": "^2.0.0",
+        "bklar": ">=2.0.2",
       },
     },
     "packages/create-bklar": {
       "name": "create-bklar",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "bin": {
         "create-bklar": "./bin.js",
       },
