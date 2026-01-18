@@ -1,6 +1,6 @@
+import { type ServerWebSocket } from "bun";
 import type { Context } from "./context";
 import type { ValidatorAdapter } from "./validator";
-import { type ServerWebSocket } from "bun";
 
 // Generic Inference Helper
 export type Infer<T> = T extends { _output: infer O } ? O : any;
@@ -18,14 +18,14 @@ export type InferContext<S extends Schemas> = Context<{
 }>;
 
 export type Handler<S extends Schemas = {}, ResponseType = any> = (
-  ctx: InferContext<S>
+  ctx: InferContext<S>,
 ) => ResponseType | Promise<ResponseType>;
 
 export type Next = () => Promise<Response | void>;
 
 export type Middleware = (
   ctx: Context<any>,
-  next: Next
+  next: Next,
 ) => Promise<Response | void>;
 
 export interface RouteDoc {
@@ -40,6 +40,7 @@ export interface RouteOptions<S extends Schemas> {
   schemas?: S;
   middlewares?: Middleware[];
   doc?: RouteDoc;
+  timeout?: number;
 }
 
 export class ValidationError extends Error {
@@ -53,18 +54,19 @@ export type Logger = (
   req: Request,
   time: number,
   status: number,
-  ip?: string
+  ip?: string,
 ) => void;
 
 export type ErrorHandler = (
   error: unknown,
-  ctx?: Context<any>
+  ctx?: Context<any>,
 ) => Response | Promise<Response>;
 
 export interface BklarOptions {
   logger?: boolean | Logger;
   errorHandler?: ErrorHandler;
   validator?: ValidatorAdapter;
+  idleTimeout?: number;
   websocket?: {
     maxPayloadLength?: number;
     idleTimeout?: number;
@@ -103,17 +105,15 @@ export interface WSHandlers<T = any> {
   open?: (ws: ServerWebSocket<T>) => void | Promise<void>;
   message?: (
     ws: ServerWebSocket<T>,
-    message: string | Buffer
+    message: string | Buffer,
   ) => void | Promise<void>;
   close?: (
     ws: ServerWebSocket<T>,
     code: number,
-    reason: string
+    reason: string,
   ) => void | Promise<void>;
   drain?: (ws: ServerWebSocket<T>) => void | Promise<void>;
 }
 
 export interface WSOptions<S extends Schemas>
-  extends RouteOptions<S>,
-    WSHandlers<WSData> {}
-
+  extends RouteOptions<S>, WSHandlers<WSData> {}

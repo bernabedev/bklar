@@ -18,6 +18,7 @@ import { compose } from "./utils/compose";
 import {
   defaultErrorHandler,
   ErrorType,
+  GatewayTimeoutError,
   HttpError,
   NotFoundError,
 } from "./errors";
@@ -77,19 +78,55 @@ export class BklarApp<Routes = {}> {
 
     // 3. Handler Wrapper with Response Auto-Wrapping
     stack.push(async (ctx, next) => {
-      let res = await handler(ctx as any);
+      if (options.timeout) {
+        const controller = new AbortController();
+        ctx.signal = controller.signal;
+        let timer: Timer | null = null;
 
-      if (!(res instanceof Response)) {
-        if (typeof res === "object" || Array.isArray(res)) {
-          res = ctx.json(res);
-        } else if (typeof res === "string") {
-          res = ctx.text(res);
+        const timeoutPromise = new Promise((_, reject) => {
+          timer = setTimeout(() => {
+            controller.abort();
+            reject(new GatewayTimeoutError());
+          }, options.timeout);
+        });
+
+        try {
+          let res = await Promise.race([handler(ctx as any), timeoutPromise]);
+
+          if (timer) {
+            clearTimeout(timer);
+          }
+
+          if (!(res instanceof Response)) {
+            if (typeof res === "object" || Array.isArray(res)) {
+              res = ctx.json(res);
+            } else if (typeof res === "string") {
+              res = ctx.text(res);
+            }
+          }
+          (ctx as any)._res = res;
+          return res;
+        } catch (error) {
+          if (timer) {
+            clearTimeout(timer);
+          }
+          throw error;
         }
+      } else {
+        let res = await handler(ctx as any);
+
+        if (!(res instanceof Response)) {
+          if (typeof res === "object" || Array.isArray(res)) {
+            res = ctx.json(res);
+          } else if (typeof res === "string") {
+            res = ctx.text(res);
+          }
+        }
+
+        (ctx as any)._res = res;
+
+        return res;
       }
-
-      (ctx as any)._res = res;
-
-      return res;
     });
 
     this.router.add(method, fullPath, stack, options);
@@ -421,6 +458,7 @@ export class BklarApp<Routes = {}> {
 
     const server = Bun.serve<WSData>({
       port: Number(port),
+      idleTimeout: this.options.idleTimeout,
       websocket: {
         ...this.options.websocket,
         open: (ws) => ws.data._handlers.open?.(ws),

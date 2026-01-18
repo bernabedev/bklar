@@ -22,10 +22,12 @@ export class Context<T extends { query: any; params: any; body: any }> {
   public _headers: Headers = new Headers();
   // Store cookies to be set in the response
   public _setCookies: string[] = [];
+  public signal: AbortSignal;
 
-  constructor(req: Request, params: T["params"]) {
+  constructor(req: Request, params: T["params"], signal?: AbortSignal) {
     this.req = req;
     this.params = params;
+    this.signal = signal ?? req.signal;
   }
 
   setHeader(key: string, value: string) {
@@ -58,7 +60,7 @@ export class Context<T extends { query: any; params: any; body: any }> {
   json(
     data: object,
     status: number = 200,
-    headers: HeadersInit = {}
+    headers: HeadersInit = {},
   ): Response {
     const responseHeaders = new Headers(headers);
     responseHeaders.set("Content-Type", "application/json");
@@ -73,7 +75,7 @@ export class Context<T extends { query: any; params: any; body: any }> {
   text(
     data: string,
     status: number = 200,
-    headers: HeadersInit = {}
+    headers: HeadersInit = {},
   ): Response {
     const responseHeaders = new Headers(headers);
     responseHeaders.set("Content-Type", "text/plain;charset=UTF-8");
@@ -95,11 +97,14 @@ export class Context<T extends { query: any; params: any; body: any }> {
   getCookie(name: string): string | undefined {
     const cookieHeader = this.req.headers.get("Cookie");
     if (!cookieHeader) return undefined;
-    const cookies = cookieHeader.split(";").reduce((acc, cookie) => {
-      const [key, value] = cookie.split("=").map((c) => c.trim());
-      acc[key] = value;
-      return acc;
-    }, {} as Record<string, string>);
+    const cookies = cookieHeader.split(";").reduce(
+      (acc, cookie) => {
+        const [key, value] = cookie.split("=").map((c) => c.trim());
+        acc[key] = value;
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
     return cookies[name];
   }
 
