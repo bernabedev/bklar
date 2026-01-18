@@ -13,6 +13,7 @@ export enum ErrorType {
   TOO_MANY_REQUESTS = "TOO_MANY_REQUESTS",
   UNPROCESSABLE_ENTITY = "UNPROCESSABLE_ENTITY",
   SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE",
+  GATEWAY_TIMEOUT = "GATEWAY_TIMEOUT",
 }
 
 const ERROR_METADATA: Record<
@@ -57,6 +58,10 @@ const ERROR_METADATA: Record<
   [ErrorType.SERVICE_UNAVAILABLE]: {
     statusCode: 503,
     defaultMessage: "Service Unavailable",
+  },
+  [ErrorType.GATEWAY_TIMEOUT]: {
+    statusCode: 504,
+    defaultMessage: "Gateway Timeout",
   },
 };
 
@@ -168,5 +173,11 @@ export class UnprocessableEntityError extends HttpError {
 export class ServiceUnavailableError extends HttpError {
   constructor(message?: string, details?: any) {
     super(ErrorType.SERVICE_UNAVAILABLE, message, details);
+  }
+}
+
+export class GatewayTimeoutError extends HttpError {
+  constructor(message?: string, details?: any) {
+    super(ErrorType.GATEWAY_TIMEOUT, message, details);
   }
 }

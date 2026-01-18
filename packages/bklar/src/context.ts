@@ -22,10 +22,12 @@ export class Context<T extends { query: any; params: any; body: any }> {
   public _headers: Headers = new Headers();
   // Store cookies to be set in the response
   public _setCookies: string[] = [];
+  public signal: AbortSignal;
 
   constructor(req: Request, params: T["params"]) {
     this.req = req;
     this.params = params;
+    this.signal = req.signal;
   }
 
   setHeader(key: string, value: string) {

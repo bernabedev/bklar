@@ -40,6 +40,7 @@ export interface RouteOptions<S extends Schemas> {
   schemas?: S;
   middlewares?: Middleware[];
   doc?: RouteDoc;
+  timeout?: number;
 }
 
 export class ValidationError extends Error {
@@ -62,6 +63,7 @@ export type ErrorHandler = (
 ) => Response | Promise<Response>;
 
 export interface BklarOptions {
+  idleTimeout?: number;
   logger?: boolean | Logger;
   errorHandler?: ErrorHandler;
   validator?: ValidatorAdapter;

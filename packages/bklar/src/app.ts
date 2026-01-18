@@ -18,6 +18,7 @@ import { compose } from "./utils/compose";
 import {
   defaultErrorHandler,
   ErrorType,
+  GatewayTimeoutError,
   HttpError,
   NotFoundError,
 } from "./errors";
@@ -75,21 +76,59 @@ export class BklarApp<Routes = {}> {
       stack.push(this.createValidationMiddleware(options.schemas));
     }
 
-    // 3. Handler Wrapper with Response Auto-Wrapping
+    // 3. Handler Wrapper with Response Auto-Wrapping and Timeout
     stack.push(async (ctx, next) => {
-      let res = await handler(ctx as any);
+      if (options.timeout) {
+        const controller = new AbortController();
+        ctx.signal = controller.signal; // Expose the signal to the handler
+        let timer: Timer | null = null;
 
-      if (!(res instanceof Response)) {
-        if (typeof res === "object" || Array.isArray(res)) {
-          res = ctx.json(res);
-        } else if (typeof res === "string") {
-          res = ctx.text(res);
+        const timeoutPromise = new Promise((_, reject) => {
+          timer = setTimeout(() => {
+            controller.abort();
+            reject(new GatewayTimeoutError());
+          }, options.timeout);
+        });
+
+        let res;
+        if (options.timeout) {
+          const controller = new AbortController();
+          ctx.signal = controller.signal; // Expose the signal to the handler
+          let timer: NodeJS.Timeout | null = null;
+
+          const timeoutPromise = new Promise((_, reject) => {
+            timer = setTimeout(() => {
+              controller.abort();
+              reject(new GatewayTimeoutError());
+            }, options.timeout);
+          });
+
+          try {
+            res = await Promise.race([handler(ctx as any), timeoutPromise]);
+          } catch (error) {
+            // Re-throw the timeout error or any other error from the handler
+            throw error;
+          } finally {
+            // If handler finishes or errors, clear the timer
+            if (timer) {
+              clearTimeout(timer);
+            }
+          }
+        } else {
+          // Original logic without timeout
+          res = await handler(ctx as any);
         }
-      }
 
-      (ctx as any)._res = res;
+        if (!(res instanceof Response)) {
+          if (typeof res === "object" || Array.isArray(res)) {
+            res = ctx.json(res);
+          } else if (typeof res === "string") {
+            res = ctx.text(res);
+          }
+        }
 
-      return res;
+        (ctx as any)._res = res;
+        return res;
     });
 
     this.router.add(method, fullPath, stack, options);
@@ -420,6 +459,7 @@ export class BklarApp<Routes = {}> {
         : defaultLogger;
 
     const server = Bun.serve<WSData>({
+      idleTimeout: this.options.idleTimeout,
       port: Number(port),
       websocket: {
         ...this.options.websocket,
