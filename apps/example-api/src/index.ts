@@ -13,7 +13,7 @@ import { Bklar, type InferContext } from "bklar";
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "bklar/errors";
 import { z } from "zod";
 
-const app = Bklar({ logger: false });
+const app = Bklar({ logger: false, idleTimeout: 5 });
 
 // --- 1. Global Middleware (Replacements for onRequest/onResponse hooks) ---
 // Corrected Logger Middleware using correct v2 pattern
@@ -149,6 +149,17 @@ app.get(
 app.get("/error", () => {
   throw new ForbiddenError("Access denied");
 });
+
+app.get(
+  "/timeout",
+  async (ctx) => {
+    await Bun.sleep(15000);
+    return ctx.json({ message: "Timeout TEST" }, 200);
+  },
+  {
+    timeout: 1000,
+  },
+);
 
 const userSchema = z.object({
   id: z.number(),
