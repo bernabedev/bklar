@@ -1,4 +1,4 @@
-import type { HeadersInit } from "bun";
+import type { HeadersInit, BunFile } from "bun";
 import { State } from "./types";
 
 export interface CookieOptions {
@@ -83,6 +83,35 @@ export class Context<T extends { query: any; params: any; body: any }> {
     this._appendCookies(responseHeaders);
     return new Response(data, {
       status,
+      headers: responseHeaders,
+    });
+  }
+
+  download(
+    file: Blob | BunFile,
+    filename?: string,
+    headers: HeadersInit = {},
+  ): Response {
+    const responseHeaders = new Headers(headers);
+
+    if (file.type) {
+      responseHeaders.set("Content-Type", file.type);
+    } else {
+      responseHeaders.set("Content-Type", "application/octet-stream");
+    }
+
+    if (filename) {
+      responseHeaders.set(
+        "Content-Disposition",
+        `attachment; filename="${filename}"`,
+      );
+    }
+
+    this._mergeHeaders(responseHeaders);
+    this._appendCookies(responseHeaders);
+
+    return new Response(file, {
+      status: 200,
       headers: responseHeaders,
     });
   }

@@ -414,7 +414,27 @@ export class BklarApp<Routes = {}> {
         res = (ctx as any)._res;
       }
 
-      if (res instanceof Response) return res;
+      if (res instanceof Response) {
+        // Merge persistent headers
+        ctx._headers.forEach((value, key) => {
+          if (!res.headers.has(key)) {
+            res.headers.set(key, value);
+          }
+        });
+
+        // Append cookies
+        const existingCookies =
+          typeof res.headers.getSetCookie === "function"
+            ? res.headers.getSetCookie()
+            : [];
+
+        for (const cookie of ctx._setCookies) {
+          if (!existingCookies.includes(cookie)) {
+            res.headers.append("Set-Cookie", cookie);
+          }
+        }
+        return res;
+      }
 
       console.log("DEBUG v2: Dispatch returned non-Response:", typeof res, res);
 

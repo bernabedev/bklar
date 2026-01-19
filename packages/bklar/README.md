@@ -66,6 +66,29 @@ app.get(
 app.listen(3000);
 ```
 
+## 📦 Context API
+
+The `Context` object (`ctx`) provides helpers to manage requests and responses uniformly.
+
+### `ctx.json(data, status?, headers?)`
+Returns a JSON response. Automatically sets `Content-Type: application/json`.
+
+### `ctx.text(data, status?, headers?)`
+Returns a text response. Automatically sets `Content-Type: text/plain`.
+
+### `ctx.download(file, filename?, headers?)`
+Serves a file with correct headers.
+- **file:** `Blob` or `BunFile` (from `Bun.file()`).
+- **filename:** Optional. Sets `Content-Disposition: attachment; filename="..."`.
+- **headers:** Optional custom headers.
+
+```typescript
+app.get("/report", (ctx) => {
+  const file = Bun.file("./report.pdf");
+  return ctx.download(file, "monthly-report.pdf");
+});
+```
+
 ## 🔌 Real-Time (WebSockets)
 
 Bklar v2 supports WebSockets natively. No external plugins required.
