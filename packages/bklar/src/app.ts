@@ -38,6 +38,7 @@ export class BklarApp<Routes = {}> {
   public readonly options: BklarOptions;
   private globalMiddlewares: Middleware[] = [];
   public readonly validator: ValidatorAdapter;
+  private server?: Server<any>;
 
   constructor(options: BklarOptions = {}) {
     this.options = {
@@ -466,6 +467,20 @@ export class BklarApp<Routes = {}> {
     }
   }
 
+  /**
+   * Broadcast a message to all subscribers of a topic.
+   * Note: This only works after app.listen() is called.
+   */
+  broadcast(topic: string, data: string | ArrayBuffer | Uint8Array) {
+    if (this.server) {
+      this.server.publish(topic, data);
+    } else {
+      console.warn(
+        "⚠️ app.broadcast() called before app.listen(). Message dropped.",
+      );
+    }
+  }
+
   listen(
     port: number | string = 3000,
     callback?: (server: Server<any>) => void,
@@ -513,6 +528,8 @@ export class BklarApp<Routes = {}> {
         return new Response("Internal Server Error", { status: 500 });
       },
     });
+
+    this.server = server;
 
     console.log(
       `✅ Server listening on http://${server.hostname}:${server.port}`,
