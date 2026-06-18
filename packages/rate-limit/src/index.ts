@@ -30,6 +30,13 @@ export interface RateLimitOptions {
   keyGenerator?: (ctx: InferContext<any>) => string;
 
   /**
+   * A function that can bypass the rate limiter for a request.
+   * If it returns `true`, the request proceeds without tracking hits
+   * or attaching rate-limit headers.
+   */
+  skip?: (ctx: InferContext<any>) => boolean | Promise<boolean>;
+
+  /**
    * If `true`, adds `X-RateLimit-*` headers to the response.
    * @default true
    */
@@ -54,6 +61,7 @@ export function rateLimit(options: RateLimitOptions = {}): Middleware {
     max = 50,
     message = "Too many requests, please try again later.",
     keyGenerator = defaultKeyGenerator,
+    skip,
     standardHeaders = true,
   } = options;
 
@@ -80,6 +88,10 @@ export function rateLimit(options: RateLimitOptions = {}): Middleware {
   if (cleanup.unref) cleanup.unref();
 
   return async (ctx, next) => {
+    if (skip && (await skip(ctx))) {
+      return next();
+    }
+
     const key = keyGenerator(ctx);
     const now = Date.now();
     const windowStart = now - windowMs;

@@ -95,4 +95,43 @@ describe("Rate Limit Middleware", () => {
     });
     expect(resAFail.status).toBe(429);
   });
+
+  it("should bypass rate limiting and omit headers when skip returns true", async () => {
+    const app = Bklar({ logger: false });
+    app.use(
+      rateLimit({
+        max: 1,
+        windowMs: 1000,
+        skip: (ctx) => ctx.req.headers.get("X-Skip-RateLimit") === "true",
+      })
+    );
+    app.get("/", (ctx) => ctx.text("ok"));
+
+    const res1 = await app.request("/", {
+      headers: {
+        "X-Client-IP": "4.4.4.4",
+        "X-Skip-RateLimit": "true",
+      },
+    });
+    const res2 = await app.request("/", {
+      headers: {
+        "X-Client-IP": "4.4.4.4",
+        "X-Skip-RateLimit": "true",
+      },
+    });
+    const res3 = await app.request("/", {
+      headers: {
+        "X-Client-IP": "4.4.4.4",
+        "X-Skip-RateLimit": "true",
+      },
+    });
+
+    expect(res1.status).toBe(200);
+    expect(res2.status).toBe(200);
+    expect(res3.status).toBe(200);
+
+    expect(res3.headers.has("X-RateLimit-Limit")).toBe(false);
+    expect(res3.headers.has("X-RateLimit-Remaining")).toBe(false);
+    expect(res3.headers.has("X-RateLimit-Reset")).toBe(false);
+  });
 });

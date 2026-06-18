@@ -57,3 +57,49 @@ app.use(
   })
 );
 ```
+
+## Skip Requests
+
+Use `skip` when you need to bypass the rate limiter entirely for specific requests,
+such as trusted internal traffic, health checks, or monitoring endpoints.
+
+If `skip` returns `true`, the middleware immediately calls `next()` without
+tracking hits or attaching any `X-RateLimit-*` headers.
+
+```typescript
+app.use(
+  rateLimit({
+    windowMs: 60 * 1000,
+    max: 100,
+    skip: (ctx) => ctx.req.headers.get("user-agent") === "HealthChecker",
+  })
+);
+```
+
+### Trusted IP Example
+
+When your app sits behind reverse proxies like Cloudflare, use forwarded headers
+to inspect the real client IP before deciding whether to skip rate limiting.
+
+```typescript
+import { rateLimit } from "@bklarjs/rate-limit";
+
+const trustedIps = ["127.0.0.1", "192.168.1.50"];
+
+app.use(
+  rateLimit({
+    windowMs: 60 * 1000,
+    max: 100,
+    skip: (ctx) => {
+      // Extract the true client IP (considering reverse proxies like Cloudflare)
+      const ip =
+        ctx.req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+        ctx.req.headers.get("cf-connecting-ip") ||
+        "unknown";
+
+      // If the IP is in our trusted list, skip rate limiting
+      return trustedIps.includes(ip);
+    }
+  })
+);
+```
