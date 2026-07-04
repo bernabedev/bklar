@@ -59,7 +59,7 @@ describe("@bklarjs/swagger Package Tests", () => {
 
     const queryParam = operation.parameters.find((p: any) => p.in === "query");
     expect(queryParam.name).toBe("format");
-    expect(queryParam.required).toBe(false || undefined); // Because it's optional
+    expect(queryParam.required).toBe(false); // Because it's optional
     expect(queryParam.schema.enum).toEqual(["json", "xml"]);
   });
 
