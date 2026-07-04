@@ -11,6 +11,8 @@ export interface Schemas<T = any> {
   body?: T;
 }
 
+export type ResponseSchemas = Record<number, any>;
+
 export type InferContext<S extends Schemas> = Context<{
   query: S["query"] extends undefined ? never : Infer<S["query"]>;
   params: S["params"] extends undefined ? never : Infer<S["params"]>;
@@ -28,6 +30,11 @@ export type Middleware = (
   next: Next,
 ) => Promise<Response | void>;
 
+export interface MiddlewareMeta {
+  fn: Middleware;
+  priority?: number;
+}
+
 export interface RouteDoc {
   summary?: string;
   description?: string;
@@ -41,6 +48,7 @@ export interface RouteOptions<S extends Schemas> {
   middlewares?: Middleware[];
   doc?: RouteDoc;
   timeout?: number;
+  responses?: ResponseSchemas;
 }
 
 export class ValidationError extends Error {
@@ -62,11 +70,24 @@ export type ErrorHandler = (
   ctx?: Context<any>,
 ) => Response | Promise<Response>;
 
+export interface LifecycleHooks {
+  onStart?: (server: any) => void | Promise<void>;
+  onStop?: () => void | Promise<void>;
+  onRequest?: (ctx: Context<any>) => void | Promise<void>;
+  onResponse?: (ctx: Context<any>, response: Response) => void | Promise<void>;
+}
+
 export interface BklarOptions {
   logger?: boolean | Logger;
   errorHandler?: ErrorHandler;
   validator?: ValidatorAdapter;
   idleTimeout?: number;
+  maxBodySize?: number;
+  requestId?: {
+    headerName?: string;
+    generator?: () => string;
+  };
+  hooks?: LifecycleHooks;
   websocket?: {
     maxPayloadLength?: number;
     idleTimeout?: number;
@@ -79,6 +100,8 @@ export interface BklarOptions {
           compress?: boolean | "shared";
           decompress?: boolean | "shared";
         };
+    pingInterval?: number;
+    pongTimeout?: number;
   };
 }
 
@@ -116,4 +139,21 @@ export interface WSHandlers<T = any> {
 }
 
 export interface WSOptions<S extends Schemas>
-  extends RouteOptions<S>, WSHandlers<WSData> {}
+  extends RouteOptions<S>, WSHandlers<WSData> {
+  pingInterval?: number;
+  pongTimeout?: number;
+}
+
+export interface ServerTimingEntry {
+  name: string;
+  description?: string;
+  duration: number;
+}
+
+export interface SSEWriter {
+  send(event: string, data: string): boolean;
+  id(id: string): void;
+  retry(ms: number): void;
+  close(): void;
+  readonly closed: boolean;
+}

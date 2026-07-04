@@ -1,5 +1,5 @@
 import type { HeadersInit, BunFile } from "bun";
-import { State } from "./types";
+import { State, type ServerTimingEntry, type SSEWriter } from "./types";
 
 export interface CookieOptions {
   domain?: string;
@@ -23,11 +23,25 @@ export class Context<T extends { query: any; params: any; body: any }> {
   // Store cookies to be set in the response
   public _setCookies: string[] = [];
   public signal: AbortSignal;
+  public requestId: string;
+  private _requestIdHeaderName: string;
+  private _maxBodySize: number;
+  private _serverTimings: ServerTimingEntry[] = [];
 
-  constructor(req: Request, params: T["params"], signal?: AbortSignal) {
+  constructor(
+    req: Request,
+    params: T["params"],
+    signal?: AbortSignal,
+    requestId?: string,
+    maxBodySize?: number,
+    requestIdHeaderName?: string,
+  ) {
     this.req = req;
     this.params = params;
     this.signal = signal ?? req.signal;
+    this.requestId = requestId ?? crypto.randomUUID();
+    this._maxBodySize = maxBodySize ?? 0;
+    this._requestIdHeaderName = requestIdHeaderName ?? "X-Request-Id";
   }
 
   setHeader(key: string, value: string) {
@@ -43,18 +57,58 @@ export class Context<T extends { query: any; params: any; body: any }> {
       return;
     }
     try {
+      const contentLength = this.req.headers.get("content-length");
+      if (
+        this._maxBodySize > 0 &&
+        contentLength &&
+        parseInt(contentLength, 10) > this._maxBodySize
+      ) {
+        throw Object.assign(new Error("Payload Too Large"), { status: 413 });
+      }
+
       const contentType = this.req.headers.get("content-type");
       if (contentType?.includes("application/json")) {
-        this.body = await this.req.json();
+        if (this._maxBodySize > 0 && this.req.body) {
+          this.body = await this._readLimitedBody(this.req);
+        } else {
+          this.body = await this.req.json();
+        }
       } else if (contentType?.includes("application/x-www-form-urlencoded")) {
         const formData = await this.req.formData();
         this.body = Object.fromEntries(formData.entries()) as T["body"];
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.status === 413) throw error;
       // Ignore body parsing errors, validation will catch empty body if required
     } finally {
       this.bodyParsed = true;
     }
+  }
+
+  private async _readLimitedBody(req: Request): Promise<any> {
+    const reader = req.body!.getReader();
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.length;
+      if (total > this._maxBodySize) {
+        reader.cancel();
+        throw Object.assign(new Error("Payload Too Large"), { status: 413 });
+      }
+      chunks.push(value);
+    }
+
+    const buffer = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      buffer.set(chunk, offset);
+      offset += chunk.length;
+    }
+    const text = new TextDecoder().decode(buffer);
+    return JSON.parse(text);
   }
 
   json(
@@ -66,6 +120,8 @@ export class Context<T extends { query: any; params: any; body: any }> {
     responseHeaders.set("Content-Type", "application/json");
     this._mergeHeaders(responseHeaders);
     this._appendCookies(responseHeaders);
+    this._appendRequestId(responseHeaders);
+    this._appendServerTiming(responseHeaders);
     return new Response(JSON.stringify(data), {
       status,
       headers: responseHeaders,
@@ -81,6 +137,8 @@ export class Context<T extends { query: any; params: any; body: any }> {
     responseHeaders.set("Content-Type", "text/plain;charset=UTF-8");
     this._mergeHeaders(responseHeaders);
     this._appendCookies(responseHeaders);
+    this._appendRequestId(responseHeaders);
+    this._appendServerTiming(responseHeaders);
     return new Response(data, {
       status,
       headers: responseHeaders,
@@ -109,6 +167,8 @@ export class Context<T extends { query: any; params: any; body: any }> {
 
     this._mergeHeaders(responseHeaders);
     this._appendCookies(responseHeaders);
+    this._appendRequestId(responseHeaders);
+    this._appendServerTiming(responseHeaders);
 
     return new Response(file, {
       status: 200,
@@ -120,7 +180,77 @@ export class Context<T extends { query: any; params: any; body: any }> {
     const responseHeaders = new Headers(headers);
     this._mergeHeaders(responseHeaders);
     this._appendCookies(responseHeaders);
+    this._appendRequestId(responseHeaders);
+    this._appendServerTiming(responseHeaders);
     return new Response(null, { status, headers: responseHeaders });
+  }
+
+  sse(): SSEWriter {
+    let _closed = false;
+    let _controller: ReadableStreamDefaultController | null = null;
+    let currentId: string | null = null;
+    let retryMs: number | null = null;
+
+    const stream = new ReadableStream({
+      start(controller) {
+        _controller = controller;
+        if (retryMs !== null) {
+          controller.enqueue(new TextEncoder().encode(`retry: ${retryMs}\n\n`));
+        }
+      },
+      cancel() {
+        _closed = true;
+        _controller = null;
+      },
+    });
+
+    const headers = new Headers({
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+    });
+    this._mergeHeaders(headers);
+    this._appendCookies(headers);
+    this._appendRequestId(headers);
+    this._appendServerTiming(headers);
+
+    (this as any)._res = new Response(stream, { headers });
+
+    return {
+      get closed() {
+        return _closed;
+      },
+      id(id: string) {
+        currentId = id;
+      },
+      retry(ms: number) {
+        retryMs = ms;
+      },
+      send(event: string, data: string): boolean {
+        if (_closed || !_controller) return false;
+        let msg = "";
+        if (currentId) msg += `id: ${currentId}\n`;
+        if (event) msg += `event: ${event}\n`;
+        msg += `data: ${data}\n\n`;
+        try {
+          _controller.enqueue(new TextEncoder().encode(msg));
+        } catch {
+          _closed = true;
+          return false;
+        }
+        return true;
+      },
+      close() {
+        if (_closed || !_controller) return;
+        _closed = true;
+        try {
+          _controller.close();
+        } catch {
+          // already closed
+        }
+        _controller = null;
+      },
+    };
   }
 
   getCookie(name: string): string | undefined {
@@ -151,6 +281,27 @@ export class Context<T extends { query: any; params: any; body: any }> {
     this._setCookies.push(cookieString);
   }
 
+  serverTiming(name: string, durationMs: number, description?: string) {
+    this._serverTimings.push({
+      name,
+      duration: durationMs,
+      description,
+    });
+  }
+
+  time<T>(name: string, fn: () => T | Promise<T>): Promise<T> {
+    const start = performance.now();
+    const result = fn();
+    if (result instanceof Promise) {
+      return result.then((val) => {
+        this.serverTiming(name, performance.now() - start);
+        return val;
+      });
+    }
+    this.serverTiming(name, performance.now() - start);
+    return Promise.resolve(result);
+  }
+
   private _appendCookies(headers: Headers) {
     for (const cookie of this._setCookies) {
       headers.append("Set-Cookie", cookie);
@@ -163,5 +314,24 @@ export class Context<T extends { query: any; params: any; body: any }> {
         headers.set(key, value);
       }
     });
+  }
+
+  private _appendRequestId(headers: Headers) {
+    if (this.requestId && !headers.has(this._requestIdHeaderName.toLowerCase())) {
+      headers.set(this._requestIdHeaderName, this.requestId);
+    }
+  }
+
+  private _appendServerTiming(headers: Headers) {
+    if (this._serverTimings.length === 0) return;
+    const value = this._serverTimings
+      .map((t) => {
+        let entry = t.name;
+        if (t.description) entry += `;desc="${t.description}"`;
+        entry += `;dur=${Math.round(t.duration)}`;
+        return entry;
+      })
+      .join(", ");
+    headers.set("Server-Timing", value);
   }
 }
