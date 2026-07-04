@@ -1,0 +1,75 @@
+---
+title: Lifecycle Hooks
+description: Run code on server start, stop, and during request processing.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+# Lifecycle Hooks
+
+Lifecycle hooks let you run code at specific points in the server and request lifecycle — useful for database connections, metrics, logging, and cleanup.
+
+## Available Hooks
+
+| Hook | Fires | Use Case |
+|:-----|:------|:---------|
+| `onStart` | After `app.listen()` succeeds | DB connection, cache warmup |
+| `onStop` | Before shutdown begins | Close connections, flush logs |
+| `onRequest` | After context creation, before middleware | Request logging, rate limit checks |
+| `onResponse` | After a response is ready, before sending | Response logging, custom headers |
+
+## Configuration
+
+```typescript
+const app = Bklar({
+  hooks: {
+    onStart(server) {
+      console.log(`Ready on port ${server.port}`);
+      connectDatabase();
+    },
+
+    onStop() {
+      console.log("Shutting down...");
+      disconnectDatabase();
+    },
+
+    onRequest(ctx) {
+      console.log(`${ctx.req.method} ${ctx.req.url} [${ctx.requestId}]`);
+    },
+
+    onResponse(ctx, response) {
+      console.log(`→ ${response.status}`);
+    },
+  },
+});
+```
+
+## Database Connection Example
+
+```typescript
+let db: Database;
+
+const app = Bklar({
+  hooks: {
+    onStart: () => {
+      db = new Database("app.db");
+      console.log("DB connected");
+    },
+    onStop: () => {
+      db.close();
+      console.log("DB closed");
+    },
+  },
+});
+
+app.listen(3000);
+
+// Graceful shutdown
+process.on("SIGTERM", () => app.stop());
+process.on("SIGINT", () => app.stop());
+```
+
+<Callout title="Error handling in hooks">
+  Hook errors are caught and logged — they won't crash the server.
+  Use `try/catch` in hooks for critical operations.
+</Callout>

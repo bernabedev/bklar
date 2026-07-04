@@ -1,0 +1,47 @@
+---
+title: Request IDs
+description: Automatic per-request correlation IDs for tracing and debugging.
+---
+
+# Request IDs
+
+Every request handled by Bklar gets a unique ID. This ID is available on the context, returned in response headers, and useful for distributed tracing.
+
+## Default Behavior
+
+Out of the box, Bklar generates a UUID v4 for each request and attaches it to `ctx.requestId`. The `X-Request-Id` header is automatically included in all responses.
+
+```typescript
+app.get("/", (ctx) => {
+  console.log(`Handling request ${ctx.requestId}`);
+  return ctx.text("ok");
+});
+```
+
+```bash
+curl -i http://localhost:3000/
+# HTTP/1.1 200 OK
+# X-Request-Id: f47ac10b-58cc-4372-a567-0e02b2c3d479
+```
+
+## Propagation
+
+If the incoming request already has an `X-Request-Id` header, Bklar reuses it instead of generating a new one. This enables distributed tracing across services.
+
+```bash
+curl -H "X-Request-Id: trace-abc-123" http://localhost:3000/
+# X-Request-Id: trace-abc-123
+```
+
+## Custom Configuration
+
+Use the `requestId` option to customize the header name or ID generator:
+
+```typescript
+const app = Bklar({
+  requestId: {
+    headerName: "X-Correlation-Id",    // Custom header
+    generator: () => `req-${Date.now()}`,  // Custom generator
+  },
+});
+```

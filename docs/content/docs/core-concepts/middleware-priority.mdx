@@ -1,0 +1,55 @@
+---
+title: Middleware Priority
+description: Control middleware execution order with numeric priorities.
+---
+
+# Middleware Priority
+
+By default, middlewares execute in registration order. When your app grows, you may need fine-grained control. Bklar supports optional numeric priorities — lower values run first.
+
+## Basic Usage
+
+Pass a second argument to `app.use()`:
+
+```typescript
+// Runs first (priority -100)
+app.use(logger(), -100);
+
+// Runs second (priority 0 — default)
+app.use(cors(), 0);
+
+// Runs last (priority 100)
+app.use(session(), 100);
+```
+
+## Default Behavior
+
+When no priority is set (or `undefined`), the default is `0`. Middlewares with the same priority retain registration order:
+
+```typescript
+app.use(a);           // priority 0, registered first → runs first
+app.use(b);           // priority 0, registered second → runs second
+app.use(c, -10);      // priority -10 → runs before both a and b
+```
+
+## Recommended Priority Ranges
+
+Following these conventions keeps middleware ordering predictable across teams:
+
+| Range | Purpose | Examples |
+|:------|:--------|:---------|
+| `-100` | Logging, metrics, request context | `logger`, request ID extraction |
+| `-50` | Security headers, rate limiting | `helmet`, `rate-limit`, `cors` |
+| `-10` | Authentication, sessions | `jwt`, `session`, `csrf` |
+| `0` | Default — application middleware | body parsing, feature flags |
+| `50` | Response transformation | `compression`, `cache` |
+
+```typescript
+app.use(logger(), -100);
+app.use(helmet(), -50);
+app.use(rateLimit({ max: 100 }), -50);
+app.use(cors(), -50);
+app.use(jwt({ secret: "key" }), -10);
+app.use(session(), -10);
+app.use(compression(), 50);
+```

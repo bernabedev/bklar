@@ -1,0 +1,108 @@
+---
+title: CSRF Protection
+description: Protect your forms and APIs from Cross-Site Request Forgery attacks.
+---
+
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
+
+# CSRF Protection
+
+`@bklarjs/csrf` protects mutating requests (POST, PUT, PATCH, DELETE) using the double-submit cookie pattern. A cryptographically random token is set as a cookie and must be echoed back in a header or form field.
+
+## Installation
+
+<Tabs items={["Bun", "NPM"]}>
+<Tab value="Bun">
+
+```bash
+bun add @bklarjs/csrf
+```
+
+</Tab>
+<Tab value="NPM">
+
+```bash
+npm install @bklarjs/csrf
+```
+
+</Tab>
+</Tabs>
+
+## Basic Usage
+
+```typescript
+import { csrf } from "@bklarjs/csrf";
+
+app.use(csrf());
+```
+
+That's it. GET, HEAD, and OPTIONS requests pass through. All other methods are validated.
+
+## How It Works
+
+1. **Token Generation** — On any request, if no CSRF cookie exists, a 32-byte random token is generated and set as the `csrf-token` cookie.
+2. **Token Submission** — The client must send the same token in:
+   - `X-CSRF-Token` header, OR
+   - A `_csrf` field in the request body (JSON or form-encoded)
+3. **Validation** — On mutating requests, the submitted token must match the cookie value.
+
+## Client-Side (Browser)
+
+```javascript
+// Read token from cookie and include in fetch
+const token = document.cookie
+  .split("; ")
+  .find((row) => row.startsWith("csrf-token="))
+  ?.split("=")[1];
+
+fetch("/api/users", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "X-CSRF-Token": token,
+  },
+  body: JSON.stringify({ name: "Alice" }),
+});
+```
+
+Or in a form:
+
+```html
+<form method="POST" action="/submit">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+  <input type="text" name="name" />
+</form>
+```
+
+## Configuration
+
+```typescript
+app.use(csrf({
+  cookieName: "x-csrf-token",    // Cookie name (default: csrf-token)
+  headerName: "x-csrf-token",    // Header name (default: x-csrf-token)
+  fieldName: "csrf_token",       // Body field name (default: _csrf)
+  httpOnly: false,               // Must be readable by JS (default: false)
+  secure: true,                  // HTTPS only (default: false)
+  sameSite: "Strict",            // Cookie policy (default: Strict)
+}));
+```
+
+## Exposing Token to Templates
+
+The CSRF token is available on `ctx.state.csrfToken` after the middleware runs:
+
+```typescript
+app.get("/form", (ctx) => {
+  return ctx.text(`
+    <form method="POST" action="/submit">
+      <input type="hidden" name="_csrf" value="${ctx.state.csrfToken}" />
+      <button type="submit">Submit</button>
+    </form>
+  `, 200, { "Content-Type": "text/html" });
+});
+```
+
+<Callout title="Safe methods">
+  GET, HEAD, and OPTIONS are always allowed without token validation.
+</Callout>

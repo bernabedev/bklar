@@ -1,19 +1,17 @@
 ---
 title: Testing
-description: Unit and integration testing with Bun.
+description: Unit, integration, and E2E testing with Bun.
 ---
+
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
 # Testing
 
-Since Bklar is built on Bun, you should use the native `bun:test` runner. It is incredibly fast and API-compatible with Jest.
+Bklar is built on Bun, so use the native `bun:test` runner. It's fast and API-compatible with Jest.
 
-## Integration Testing
+## In-Memory Testing
 
-Bklar provides a helper method `app.request(path, options)` specifically designed for testing. It simulates a request without needing to start a TCP server.
-
-### Example
-
-Create a file `tests/app.test.ts`:
+`app.request()` simulates requests without starting a TCP server — perfect for unit and integration tests.
 
 ```typescript
 import { describe, expect, it, beforeEach } from "bun:test";
@@ -23,44 +21,125 @@ describe("My API", () => {
   let app: ReturnType<typeof Bklar>;
 
   beforeEach(() => {
-    app = Bklar({ logger: false }); // Disable logger for clean output
+    app = Bklar({ logger: false });
     app.get("/hello", (ctx) => ctx.json({ hello: "world" }));
+    app.post("/submit", (ctx) => ctx.body, {
+      schemas: { body: z.object({ name: z.string() }) },
+    });
   });
 
   it("should return hello world", async () => {
-    // 1. Simulate Request
     const res = await app.request("/hello");
-
-    // 2. Assert Status
     expect(res.status).toBe(200);
-
-    // 3. Assert Body
     const body = await res.json();
     expect(body).toEqual({ hello: "world" });
+  });
+
+  it("should validate request bodies", async () => {
+    const res = await app.request("/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: 123 }),
+    });
+    expect(res.status).toBe(400);
   });
 });
 ```
 
-Run it:
+## E2E Testing (Real Server)
 
-```bash
-bun test
+For full integration tests, start a real server and use `fetch()`:
+
+```typescript
+import { describe, expect, it, afterEach } from "bun:test";
+import { Bklar } from "bklar";
+
+describe("E2E", () => {
+  let server: ReturnType<typeof Bklar.prototype.listen>;
+
+  afterEach(() => {
+    if (server) server.stop(false);
+  });
+
+  it("should handle real HTTP requests", async () => {
+    const app = Bklar({ logger: false });
+    app.get("/", () => ({ status: "ok" }));
+    server = app.listen(0); // Port 0 = random available port
+
+    const res = await fetch(`http://localhost:${server.port}/`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("X-Request-Id")).toBeTruthy();
+  });
+});
+```
+
+## Testing Middleware Priority
+
+```typescript
+it("should run middleware in priority order", async () => {
+  const order: string[] = [];
+  const app = Bklar({ logger: false });
+
+  app.use(async (_, next) => { order.push("C"); return next(); }, 10);
+  app.use(async (_, next) => { order.push("A"); return next(); }, -10);
+  app.get("/", () => { order.push("H"); return "ok"; });
+
+  await app.request("/");
+  expect(order).toEqual(["A", "C", "H"]);
+});
+```
+
+## Testing SSE
+
+```typescript
+it("should stream SSE events", async () => {
+  const app = Bklar({ logger: false });
+  app.get("/events", (ctx) => {
+    const sse = ctx.sse();
+    sse.send("ping", JSON.stringify({ t: Date.now() }));
+    sse.close();
+    return undefined;
+  });
+
+  const res = await app.request("/events");
+  expect(res.headers.get("Content-Type")).toBe("text/event-stream");
+  const body = await res.text();
+  expect(body).toContain("event: ping");
+});
 ```
 
 ## Mocking Services
 
-You can use `spyOn` or standard dependency injection to mock database calls.
-
 ```typescript
 import { spyOn } from "bun:test";
-import db from "./db";
 
 it("should handle db errors", async () => {
   const spy = spyOn(db, "findUser").mockRejectedValue(new Error("DB Down"));
-
   const res = await app.request("/users/1");
   expect(res.status).toBe(500);
-
   spy.mockRestore();
 });
 ```
+
+<Tabs items={["In-Memory", "E2E"]}>
+<Tab value="In-Memory">
+
+```bash
+# Run all tests
+bun test
+
+# Run specific file
+bun test tests/app.test.ts
+```
+
+</Tab>
+<Tab value="E2E">
+
+```bash
+# E2E tests use real ports — ensure they're available
+bun test tests/e2e.test.ts
+```
+
+</Tab>
+</Tabs>
+

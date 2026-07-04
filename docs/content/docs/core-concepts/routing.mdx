@@ -67,11 +67,13 @@ app.group(
 
 Bklar provides helper methods on the context to return standard responses.
 
-| Helper                      | Description                                   | Content-Type       |
-| :-------------------------- | :-------------------------------------------- | :----------------- |
-| `ctx.json(data, status?)`   | Returns a JSON object.                        | `application/json` |
-| `ctx.text(string, status?)` | Returns plain text.                           | `text/plain`       |
-| `ctx.status(code)`          | Returns an empty response with a status code. | -                  |
+| Helper | Description | Content-Type |
+|:-------|:------------|:-------------|
+| `ctx.json(data, status?, headers?)` | Returns a JSON object | `application/json` |
+| `ctx.text(string, status?, headers?)` | Returns plain text | `text/plain` |
+| `ctx.status(code, headers?)` | Empty response with a status code | — |
+| `ctx.download(file, filename?, headers?)` | Serves a file download | auto-detected |
+| `ctx.sse()` | Returns an SSE event stream | `text/event-stream` |
 
 You can also simply return a standard `Response` object:
 

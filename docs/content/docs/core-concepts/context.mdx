@@ -1,80 +1,118 @@
 ---
 title: Context
-description: The request context object.
+description: The request context object with headers, cookies, SSE, and timing.
 ---
+
+import { Callout } from "fumadocs-ui/components/callout";
 
 # Context
 
-The `Context` object (often named `ctx`) is passed to every route handler and middleware. It wraps the native Request and provides utilities for managing state, parameters, and responses.
+The `Context` object (`ctx`) is passed to every route handler and middleware. It wraps the native Request and provides utilities for managing state, parameters, responses, cookies, request IDs, server timing, and server-sent events.
 
 ## Properties
 
 ### `ctx.req`
 
-The native [Request](https://developer.mozilla.org/en-US/docs/Web/API/Request) object. You can access headers, method, and URL from here.
-
-```typescript
-const userAgent = ctx.req.headers.get("User-Agent");
-const url = ctx.req.url;
-```
+The native [Request](https://developer.mozilla.org/en-US/docs/Web/API/Request) object.
 
 ### `ctx.body`
 
-The parsed request body.
-
-- If you use **Validation schemas**, this is strongly typed.
-- If not, it defaults to `any` (parsed JSON or Form Data).
+The parsed request body. If you use validation schemas, this is strongly typed. Otherwise it defaults to `any` (parsed JSON or Form Data).
 
 ### `ctx.query`
 
-An object containing URL query parameters.
+URL query parameters as an object.
 
 ```typescript
 // GET /search?q=bklar&page=2
 app.get("/search", (ctx) => {
-  console.log(ctx.query.q); // "bklar"
+  console.log(ctx.query.q);    // "bklar"
   console.log(ctx.query.page); // "2"
 });
 ```
 
 ### `ctx.params`
 
-An object containing dynamic route parameters (e.g., `/users/:id`).
+Dynamic route parameters (e.g., `/users/:id`).
 
 ### `ctx.state`
 
-A shared mutable object for passing data between middlewares and handlers (e.g., authenticated users).
+Shared mutable object for passing data between middlewares and handlers.
 
 ```typescript
-// Middleware
 app.use(async (ctx, next) => {
   ctx.state.user = { id: 1, role: "admin" };
   await next();
 });
 
-// Handler
-app.get("/me", (ctx) => {
-  return ctx.json(ctx.state.user);
-});
+app.get("/me", (ctx) => ctx.json(ctx.state.user));
 ```
+
+### `ctx.requestId`
+
+A unique ID for this request. Generated as UUID v4 by default, or extracted from the incoming `X-Request-Id` header. Included in all response headers automatically.
+
+```typescript
+console.log(ctx.requestId); // "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+```
+
+### `ctx.signal`
+
+An `AbortSignal` that aborts when the request times out (if a route-level timeout is set) or is canceled by the client.
+
+## Response Helpers
+
+| Helper | Description | Content-Type |
+|:-------|:------------|:-------------|
+| `ctx.json(data, status?, headers?)` | JSON response | `application/json` |
+| `ctx.text(data, status?, headers?)` | Plain text response | `text/plain` |
+| `ctx.status(code, headers?)` | Empty response with status | — |
+| `ctx.download(file, filename?, headers?)` | File download | auto-detected |
+| `ctx.sse()` | Server-Sent Events stream | `text/event-stream` |
+
+Every response helper automatically appends `X-Request-Id` and `Server-Timing` headers when applicable.
 
 ## Cookies
 
-The context provides helpers to read and set cookies.
-
 ```typescript
-app.get("/", (ctx) => {
-  // Read
-  const session = ctx.getCookie("session_id");
+// Read
+const session = ctx.getCookie("session_id");
 
-  // Write
-  ctx.setCookie("theme", "dark", {
-    httpOnly: true,
-    maxAge: 3600, // 1 hour
-    path: "/",
-    secure: true,
-  });
-
-  return ctx.text("Cookies set");
+// Write
+ctx.setCookie("theme", "dark", {
+  httpOnly: true,
+  maxAge: 3600,
+  path: "/",
+  secure: true,
+  sameSite: "Lax",
 });
 ```
+
+## Server Timing
+
+Record timing entries that appear in the `Server-Timing` response header:
+
+```typescript
+app.get("/users", async (ctx) => {
+  const users = await ctx.time("db", () => db.findUsers());
+  return ctx.json(users);
+});
+```
+
+## SSE (Server-Sent Events)
+
+Stream events to the client:
+
+```typescript
+app.get("/events", (ctx) => {
+  const sse = ctx.sse();
+  sse.send("message", JSON.stringify({ text: "hello" }));
+  sse.close();
+  return undefined;
+});
+```
+
+<Callout>
+  See the [SSE documentation](/docs/real-time/sse) for full details on server-sent events.
+</Callout>
+

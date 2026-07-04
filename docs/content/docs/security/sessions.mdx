@@ -1,0 +1,110 @@
+---
+title: Sessions
+description: Session management middleware with pluggable stores.
+---
+
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
+
+# Sessions
+
+`@bklarjs/session` provides session management middleware. It stores session data on `ctx.state.session`, sets a signed cookie, and persists changes automatically.
+
+## Installation
+
+<Tabs items={["Bun", "NPM"]}>
+<Tab value="Bun">
+
+```bash
+bun add @bklarjs/session
+```
+
+</Tab>
+<Tab value="NPM">
+
+```bash
+npm install @bklarjs/session
+```
+
+</Tab>
+</Tabs>
+
+## Basic Usage
+
+```typescript
+import { session } from "@bklarjs/session";
+
+app.use(session());
+
+app.get("/", (ctx) => {
+  // Read session data
+  const visits = (ctx.state.session?.visits || 0) + 1;
+
+  // Write session data
+  ctx.state.session!.visits = visits;
+
+  return ctx.json({ visits, sid: ctx.state.sessionId });
+});
+```
+
+The session ID is stored in a cookie (default: `sid`) and session data is persisted to a `MemoryStore` by default.
+
+## Configuration
+
+```typescript
+app.use(session({
+  cookieName: "myapp_sid",
+  maxAge: 7 * 24 * 60 * 60 * 1000,  // 7 days
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "Lax",
+  path: "/",
+}));
+```
+
+| Option | Type | Default | Description |
+|:-------|:-----|:--------|:------------|
+| `store` | `SessionStore` | `MemoryStore` | Storage backend |
+| `cookieName` | `string` | `"sid"` | Cookie name |
+| `maxAge` | `number` | `86400000` (24h) | Session TTL in ms |
+| `httpOnly` | `boolean` | `true` | Cookie httpOnly flag |
+| `secure` | `boolean` | `false` | Cookie secure flag |
+| `sameSite` | `string` | `"Lax"` | Cookie SameSite |
+| `path` | `string` | `"/"` | Cookie path |
+
+## MemoryStore
+
+The default store keeps sessions in memory with automatic TTL-based cleanup every 60 seconds.
+
+```typescript
+import { session, MemoryStore } from "@bklarjs/session";
+
+const store = new MemoryStore();
+app.use(session({ store }));
+```
+
+## Custom Stores (Redis, SQLite)
+
+Implement the `SessionStore` interface for any storage backend:
+
+```typescript
+interface SessionStore {
+  get(sid: string): SessionData | null | Promise<SessionData | null>;
+  set(sid: string, data: SessionData, maxAge?: number): void | Promise<void>;
+  destroy(sid: string): void | Promise<void>;
+}
+```
+
+<Callout title="Type augmentation">
+  Session types augment `bklar`'s `State` interface. You can extend `SessionData`
+  for typed session access:
+
+  ```typescript
+  declare module "@bklarjs/session" {
+    interface SessionData {
+      userId?: string;
+      role?: string;
+    }
+  }
+  ```
+</Callout>

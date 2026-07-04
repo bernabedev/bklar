@@ -1,0 +1,14 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "getting-started",
+    "core-concepts",
+    "real-time",
+    "security",
+    "performance",
+    "utilities",
+    "production",
+    "guides"
+  ]
+}

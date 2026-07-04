@@ -1,0 +1,96 @@
+---
+title: Graceful Shutdown
+description: Zero-downtime deployments with stop, signal handling, and in-flight request draining.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+# Graceful Shutdown
+
+Bklar provides `app.stop()` for clean server shutdown — stop accepting connections, drain in-flight requests, then terminate.
+
+## Basic Usage
+
+```typescript
+const app = Bklar();
+
+app.get("/", () => "ok");
+
+app.listen(3000);
+
+// Graceful shutdown on SIGTERM (Docker, Kubernetes)
+process.on("SIGTERM", async () => {
+  console.log("SIGTERM received");
+  await app.stop(5000);   // 5-second grace period
+  process.exit(0);
+});
+```
+
+## The Shutdown Sequence
+
+1. **Stop accepting** — `server.stop(true)` prevents new connections.
+2. **Drain** — Wait for in-flight requests to complete (up to `gracePeriodMs`).
+3. **Force stop** — After grace period, terminate remaining connections.
+
+```typescript
+await app.stop(gracePeriodMs: number = 5000);
+```
+
+## One-Line Signal Handling
+
+Use `app.gracefulShutdown()` for common patterns:
+
+```typescript
+app.listen(3000);
+app.gracefulShutdown();  // Listens for SIGTERM and SIGINT
+```
+
+## Container Deployments
+
+<Tabs items={["Docker", "Kubernetes"]}>
+<Tab value="Docker">
+
+```dockerfile
+FROM oven/bun:1
+WORKDIR /app
+COPY . .
+RUN bun install --production
+EXPOSE 3000
+CMD ["bun", "run", "src/index.ts"]
+# Docker sends SIGTERM, Bun handles it via process.on
+```
+
+</Tab>
+<Tab value="Kubernetes">
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "5"]  # Allow draining
+      terminationGracePeriodSeconds: 30
+```
+
+Pair with `app.gracefulShutdown(20000)` so the app drains before the pod is killed.
+
+</Tab>
+</Tabs>
+
+## State During Shutdown
+
+```typescript
+app.isStopping    // true after stop() is called
+app.activeRequests // current in-flight count
+```
+
+<Callout title="503 During Shutdown">
+  After `stop()` is called, new requests receive `503 Service Unavailable`.
+</Callout>

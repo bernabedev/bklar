@@ -27,11 +27,11 @@ Serve HTML, CSS, Images, and other static assets using Bun's optimized file syst
 ## Usage
 
 ```typescript
-import { serveStatic } from "@bklarjs/static";
+import { staticFiles } from "@bklarjs/static";
 
 // Serve files from the "public" folder at the root URL
 app.use(
-  serveStatic({
+  staticFiles({
     root: "public",
     prefix: "/",
   })

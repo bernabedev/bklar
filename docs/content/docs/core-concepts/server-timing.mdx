@@ -1,0 +1,57 @@
+---
+title: Server Timing
+description: Emit Server-Timing headers for request performance monitoring.
+---
+
+# Server Timing
+
+Bklar provides a `Server-Timing` API to instrument handler execution. Timing entries are automatically serialized into the `Server-Timing` response header — a W3C standard that browsers can display in DevTools.
+
+## Quick Start
+
+Use `ctx.serverTiming()` to record named timing entries:
+
+```typescript
+app.get("/users", async (ctx) => {
+  const dbStart = performance.now();
+
+  const users = await db.query("SELECT * FROM users");
+
+  ctx.serverTiming("db", performance.now() - dbStart, "Database query");
+
+  return ctx.json(users);
+});
+```
+
+Response headers:
+
+```
+Server-Timing: db;desc="Database query";dur=23
+```
+
+## Using `ctx.time()`
+
+The `ctx.time()` helper wraps a function and records its duration automatically:
+
+```typescript
+app.get("/analytics", async (ctx) => {
+  const users = await ctx.time("db-users", () => db.findUsers());
+  const stats = await ctx.time("db-stats", () => db.getStats());
+
+  return ctx.json({ users, stats });
+});
+```
+
+Response headers:
+
+```
+Server-Timing: db-users;dur=15, db-stats;dur=42
+```
+
+## Multiple Entries
+
+Multiple timing entries are joined with commas per the spec:
+
+```
+Server-Timing: db;desc="Query";dur=12, cache;dur=1, render;desc="Template";dur=5
+```

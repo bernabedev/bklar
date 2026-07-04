@@ -1,0 +1,94 @@
+---
+title: Server-Sent Events
+description: Real-time unidirectional streaming with SSE.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+# Server-Sent Events
+
+Bklar provides a built-in SSE helper on the context. Use it for unidirectional real-time data streaming—notifications, progress updates, or streaming AI responses.
+
+## SSE vs WebSockets
+
+| Feature | SSE | WebSockets |
+|:--------|:----|:-----------|
+| Direction | Server → Client only | Bidirectional |
+| Protocol | HTTP (standard) | WebSocket (upgrade) |
+| Reconnection | Automatic (built into EventSource) | Manual |
+| Binary data | No (text only) | Yes |
+| Browser support | Universal (EventSource API) | Universal |
+
+**Use SSE when** the server pushes data and the client only reads. Use WebSockets when you need full-duplex communication like chat or collaborative editing.
+
+## Basic Usage
+
+Call `ctx.sse()` inside a handler. It returns an `SSEWriter` with `send()`, `id()`, `retry()`, and `close()` methods.
+
+```typescript
+app.get("/events", (ctx) => {
+  const sse = ctx.sse();
+
+  // Set optional ID for event replay
+  sse.id("1");
+
+  // Send an event
+  sse.send("message", JSON.stringify({ text: "hello" }));
+
+  // Close the stream when done
+  sse.close();
+
+  // Return undefined — the SSE response is already set on ctx
+  return undefined;
+});
+```
+
+The handler returns `undefined` because `ctx.sse()` sets the response internally via `ReadableStream`.
+
+## Sending Multiple Events
+
+```typescript
+app.get("/progress", async (ctx) => {
+  const sse = ctx.sse();
+
+  for (let i = 0; i <= 100; i += 10) {
+    sse.send("progress", JSON.stringify({ percent: i }));
+    await Bun.sleep(500);
+  }
+
+  sse.send("complete", JSON.stringify({ status: "done" }));
+  sse.close();
+  return undefined;
+});
+```
+
+## Client-Side (Browser)
+
+```javascript
+const source = new EventSource("/progress");
+
+source.addEventListener("progress", (e) => {
+  const { percent } = JSON.parse(e.data);
+  console.log(`${percent}%`);
+});
+
+source.addEventListener("complete", () => {
+  source.close();
+});
+```
+
+## Configuration
+
+| Method | Description |
+|:-------|:------------|
+| `sse.id(id)` | Set the event ID (for `Last-Event-Id` replay) |
+| `sse.retry(ms)` | Configure client reconnection delay in milliseconds |
+| `sse.send(event, data)` | Send a named event with string data |
+| `sse.close()` | Close the stream |
+| `sse.closed` | Read-only boolean for stream state |
+
+<Callout title="Headers">
+  `ctx.sse()` automatically sets `Content-Type: text/event-stream`,
+  `Cache-Control: no-cache`, `Connection: keep-alive`, and propagates request
+  IDs and server timing entries.
+</Callout>

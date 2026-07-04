@@ -1,0 +1,126 @@
+---
+title: WebSockets
+description: Real-time communication with native Bun WebSockets, heartbeat, and rooms.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+# WebSockets
+
+Bklar includes native WebSocket support using `Bun.serve`. Define WebSocket routes with the `.ws()` method and leverage heartbeat, rooms, and Pub/Sub.
+
+## Creating a WebSocket Route
+
+```typescript
+app.ws("/chat", {
+  open(ws) {
+    console.log("Client connected");
+    ws.send("Welcome!");
+  },
+
+  message(ws, msg) {
+    console.log(`Received: ${msg}`);
+  },
+
+  close(ws) {
+    console.log("Client disconnected");
+  },
+});
+```
+
+## Heartbeat / Ping-Pong
+
+Configure automatic ping intervals to detect dead connections:
+
+```typescript
+app.ws("/realtime", {
+  pingInterval: 30000,   // Send ping every 30s
+  pongTimeout: 10000,    // Disconnect if no pong in 10s
+
+  open(ws) {
+    console.log("Connected with heartbeat");
+  },
+  message(ws, msg) {
+    // handle message
+  },
+  close(ws, code, reason) {
+    console.log(`Disconnected: ${code} ${reason}`);
+  },
+});
+```
+
+## Rooms
+
+Subscribe clients to rooms for targeted broadcasting:
+
+```typescript
+app.ws("/notifications", {
+  open(ws) {
+    // Join user-specific room
+    const userId = ws.data.ctx.state.jwt?.sub;
+    app.join(ws, `user:${userId}`);
+  },
+
+  close(ws) {
+    const userId = ws.data.ctx.state.jwt?.sub;
+    app.leave(ws, `user:${userId}`);
+  },
+});
+
+// HTTP endpoint sends to a room
+app.post("/notify/:userId", (ctx) => {
+  const { userId } = ctx.params;
+  app.to(`user:${userId}`).sendText(JSON.stringify({
+    type: "notification",
+    message: "You have a new alert",
+  }));
+
+  return ctx.text("Sent");
+});
+```
+
+## Pub/Sub
+
+Bklar exposes Bun's native Pub/Sub for broadcasting to topics. Use `ws.subscribe()` and `app.broadcast()`:
+
+```typescript
+app.ws("/alerts", {
+  open(ws) {
+    ws.subscribe("global-alerts");
+  },
+  message(ws, msg) {
+    ws.publish("global-alerts", msg);
+  },
+});
+
+// Broadcast from an HTTP handler
+app.post("/alert", (ctx) => {
+  app.broadcast("global-alerts", "System alert!");
+  return ctx.text("Alert sent");
+});
+```
+
+## Accessing the Context
+
+The `ws.data.ctx` property carries the full request context, including state from middleware:
+
+```typescript
+import { jwt } from "@bklarjs/jwt";
+
+app.use(jwt({ secret: "s3cret" }));
+
+app.ws("/secure-chat", {
+  open(ws) {
+    const user = ws.data.ctx.state.jwt;
+    console.log(`User ${user.sub} connected`);
+    ws.send(`Hello, ${user.name}!`);
+  },
+});
+```
+
+<Callout title="Production Considerations">
+  WebSocket connections count toward your server's open file descriptors.
+  Use heartbeat to detect zombie connections and set `idleTimeout` in
+  `BklarOptions.websocket` to prevent resource leaks.
+</Callout>
+

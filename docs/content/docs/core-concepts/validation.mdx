@@ -1,6 +1,6 @@
 ---
 title: Validation
-description: End-to-end type safety with Zod.
+description: End-to-end type safety with Zod for requests and responses.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -9,13 +9,13 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 Bklar has first-class support for [Zod](https://zod.dev/). When you provide a schema, the framework automatically:
 
-1. **Validates** the incoming data (Body, Query, or Params).
-2. **Returns 400 Bad Request** automatically if validation fails.
+1. **Validates** incoming data (Body, Query, or Params).
+2. **Returns 400 Bad Request** if validation fails.
 3. **Infers Types** for your handler, giving you full autocompletion.
 
-## Usage
+## Request Validation
 
-Pass a `schemas` object in the route options.
+Pass a `schemas` object in the route options:
 
 ```typescript
 import { z } from "zod";
@@ -26,51 +26,64 @@ const createUserSchema = z.object({
   age: z.number().int().optional(),
 });
 
-app.post(
-  "/users",
-  (ctx) => {
-    // ctx.body is fully typed here!
-    // TS knows that email is a string and age is number | undefined
-    const { email, username } = ctx.body;
-
-    return ctx.json({ message: `Created user ${username}` });
-  },
-  {
-    schemas: {
-      body: createUserSchema,
-    },
-  }
-);
+app.post("/users", (ctx) => {
+  // ctx.body is fully typed!
+  const { email, username } = ctx.body;
+  return ctx.json({ message: `Created user ${username}` });
+}, {
+  schemas: { body: createUserSchema },
+});
 ```
 
 ## Validating Query & Params
 
-You can validate multiple sources at once.
+```typescript
+app.get("/search/:category", (ctx) => {
+  const { category } = ctx.params;  // Typed
+  const { q, limit } = ctx.query;    // Typed
+  return ctx.json({ category, q, limit });
+}, {
+  schemas: {
+    params: z.object({
+      category: z.enum(["books", "movies"]),
+    }),
+    query: z.object({
+      q: z.string(),
+      limit: z.coerce.number().min(1).max(100).default(10),
+    }),
+  },
+});
+```
+
+## Response Validation
+
+Bklar also supports response schema validation by status code. Use the `responses` option:
 
 ```typescript
-app.get(
-  "/search/:category",
-  (ctx) => {
-    const { category } = ctx.params; // Typed
-    const { q, limit } = ctx.query; // Typed
-    return ctx.json({ category, q, limit });
-  },
-  {
-    schemas: {
-      params: z.object({
-        category: z.enum(["books", "movies"]),
-      }),
-      query: z.object({
-        q: z.string(),
-        limit: z.coerce.number().min(1).max(100).default(10),
-      }),
-    },
-  }
-);
+const userSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  email: z.string().email(),
+});
+
+app.get("/users/:id", (ctx) => {
+  return { id: 1, name: "Alice", email: "alice@example.com" };
+}, {
+  responses: { 200: userSchema },
+});
 ```
+
+If the response doesn't match the schema, a warning is logged in development. This catches implementation bugs without breaking the response flow — the client still receives the data.
+
+<Callout title="Response validation is non-blocking">
+  Response validation warns on mismatches but doesn't reject the response.
+  This prevents exposing validation internals to clients while still catching
+  bugs during development.
+</Callout>
 
 <Callout title="Note on Coercion">
   URL parameters and Query strings are strictly strings by default. Use
   `z.coerce.number()` or `z.coerce.boolean()` to automatically convert them to
   the correct type.
 </Callout>
+

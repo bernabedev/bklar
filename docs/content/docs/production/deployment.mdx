@@ -1,0 +1,129 @@
+---
+title: Deployment
+description: Running Bklar in production with Docker, Kubernetes, and VPS.
+---
+
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
+
+# Deployment
+
+Bklar apps are Bun apps. Deploy anywhere Bun runs. For zero-downtime deployments, use `app.gracefulShutdown()` and `app.stop()`.
+
+## Docker
+
+```dockerfile title="Dockerfile"
+FROM oven/bun:1 as base
+WORKDIR /usr/src/app
+
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile --production
+
+COPY . .
+
+USER bun
+EXPOSE 3000/tcp
+ENTRYPOINT [ "bun", "run", "src/index.ts" ]
+```
+
+Build and run:
+
+```bash
+docker build -t my-api .
+docker run -p 3000:3000 my-api
+```
+
+<Callout title="Graceful Shutdown in Docker">
+  Docker sends `SIGTERM` on `docker stop`. Use `app.gracefulShutdown()` in your
+  entry file so the server drains in-flight requests before exiting.
+</Callout>
+
+## Kubernetes
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: my-api:latest
+          ports:
+            - containerPort: 3000
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "5"]
+      terminationGracePeriodSeconds: 30
+```
+
+In your app entry point:
+
+```typescript
+app.listen(3000);
+app.gracefulShutdown(20000); // 20s grace period
+```
+
+## Railway / Render
+
+Platforms like Railway and Render support Bun natively:
+
+1. Connect your GitHub repository.
+2. Set **Build Command** to `bun install`.
+3. Set **Start Command** to `bun run src/index.ts`.
+
+## VPS (Ubuntu/Debian)
+
+```bash
+curl -fsSL https://bun.sh/install | bash
+git clone <your-repo>
+cd <your-repo>
+bun install --production
+bun run src/index.ts
+```
+
+For process management:
+
+```bash
+bun add -g pm2
+pm2 start src/index.ts --name "api" --interpreter ~/.bun/bin/bun
+```
+
+<Tabs items={["Docker", "Kubernetes", "VPS"]}>
+<Tab value="Docker">
+
+```bash
+docker build -t my-api .
+docker run -p 3000:3000 my-api
+```
+
+</Tab>
+<Tab value="Kubernetes">
+
+```bash
+kubectl apply -f deployment.yaml
+kubectl rollout status deployment/my-api
+```
+
+</Tab>
+<Tab value="VPS">
+
+```bash
+pm2 start src/index.ts --name "api" --interpreter ~/.bun/bin/bun
+pm2 save
+pm2 startup
+```
+
+</Tab>
+</Tabs>
+
+## Environment Variables
+
+Use Bun's built-in `Bun.env` or `process.env`:
+
+```typescript
+const PORT = process.env.PORT || 3000;
+app.listen(Number(PORT));
+```
+

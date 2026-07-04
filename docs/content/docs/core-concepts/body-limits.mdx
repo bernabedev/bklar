@@ -1,0 +1,43 @@
+---
+title: Body Size Limits
+description: Protect your server from oversized request bodies.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+# Body Size Limits
+
+Bklar supports a framework-level `maxBodySize` option to reject oversized request bodies early, returning `413 Payload Too Large`.
+
+## Configuration
+
+Set `maxBodySize` (in bytes) when creating your app:
+
+```typescript
+const app = Bklar({
+  maxBodySize: 1024 * 1024, // 1MB
+});
+```
+
+## How It Works
+
+Two layers of protection:
+
+1. **Content-Length check** — If the `Content-Length` header exceeds `maxBodySize`, the request is rejected immediately with `413`, before any body is read.
+
+2. **Streaming body check** — When a body schema triggers `parseBody()`, the framework reads the stream in chunks, tracking total bytes. If the limit is exceeded mid-stream, the reader is canceled and `413` is returned.
+
+## Error Response
+
+```json
+{
+  "error": "Payload Too Large",
+  "message": "Request body exceeds size limit",
+  "statusCode": 413
+}
+```
+
+<Callout title="Without validation schemas">
+  The streaming check runs only when body parsing is triggered (via validation
+  schemas). Always use the `Content-Length` header for the eager check.
+</Callout>
