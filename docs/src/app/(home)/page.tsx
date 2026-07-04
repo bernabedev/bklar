@@ -3,7 +3,8 @@ import Link from "next/link";
 
 export const metadata = {
   title: "Bklar - High-Performance, Type-Safe Web Framework for Bun",
-  description: "Build robust APIs faster with Bklar. The minimalist web framework built natively for Bun featuring end-to-end type safety, Zod validation, and zero overhead.",
+  description:
+    "Build robust APIs faster with Bklar. The minimalist web framework built natively for Bun featuring end-to-end type safety, Zod validation, and zero overhead.",
 };
 
 export default function HomePage() {
