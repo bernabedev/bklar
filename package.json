@@ -7,10 +7,15 @@
     "build": "bun run --filter './packages/*' build",
     "test": "bun test",
     "test:coverage": "bun test --coverage",
-    "format": "prettier --write ./packages"
+    "format": "prettier --write ./packages",
+    "bench:core": "bun run benchmarks/core.ts",
+    "bench:http": "bun run benchmarks/http.ts",
+    "bench": "bun run benchmarks/core.ts && bun run benchmarks/http.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "elysia": "^1.4.29",
+    "hono": "^4.12.27",
     "lefthook": "^2.1.9",
     "prettier": "^3.9.4"
   },
