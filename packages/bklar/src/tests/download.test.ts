@@ -96,12 +96,12 @@ describe("Context Download & Headers", () => {
     });
 
     const res = await app.request("/manual-duplicate");
-    
+
     if (typeof res.headers.getSetCookie === "function") {
-        const cookies = res.headers.getSetCookie();
-        // Should appear only once
-        const authCookies = cookies.filter(c => c === "auth=token");
-        expect(authCookies.length).toBe(1);
+      const cookies = res.headers.getSetCookie();
+      // Should appear only once
+      const authCookies = cookies.filter((c) => c === "auth=token");
+      expect(authCookies.length).toBe(1);
     }
   });
 });

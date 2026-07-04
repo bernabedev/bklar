@@ -78,7 +78,7 @@ ctx.logger.info(
     password: "supersecretpassword", // Will become "[REDACTED]"
     metadata: { apiToken: "abc-123" }, // Will become "[REDACTED]"
   },
-  "User login"
+  "User login",
 );
 ```
 
@@ -100,7 +100,7 @@ app.use(
 
     // Disable automatic request completion logging
     logRequests: true,
-  })
+  }),
 );
 ```
 

@@ -88,6 +88,7 @@ export interface BklarOptions {
     generator?: () => string;
   };
   hooks?: LifecycleHooks;
+  errorFormat?: "basic" | "problemJson";
   websocket?: {
     maxPayloadLength?: number;
     idleTimeout?: number;
@@ -106,6 +107,22 @@ export interface BklarOptions {
 }
 
 export interface State {}
+
+export interface CacheControlDirectives {
+  public?: boolean;
+  private?: boolean;
+  maxAge?: number;
+  sMaxAge?: number;
+  noCache?: boolean;
+  noStore?: boolean;
+  noTransform?: boolean;
+  mustRevalidate?: boolean;
+  proxyRevalidate?: boolean;
+  mustUnderstand?: boolean;
+  immutable?: boolean;
+  staleWhileRevalidate?: number;
+  staleIfError?: number;
+}
 
 // Improved InferInput to check for valid schema shape instead of undefined
 // This prevents 'Schemas' fallback from enforcing all keys

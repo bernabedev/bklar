@@ -66,7 +66,7 @@ app.post(
   },
   {
     middlewares: [uploadMiddleware],
-  }
+  },
 );
 
 app.listen(3000);
@@ -95,7 +95,7 @@ app.post(
       return ctx.json({ size: file.size });
     }
   },
-  { middlewares: [memoryUpload] }
+  { middlewares: [memoryUpload] },
 );
 ```
 

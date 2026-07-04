@@ -57,7 +57,7 @@ export function cron(config: CronConfig): Middleware {
       protect: overlap === "skip",
       catch: onError,
     },
-    run
+    run,
   );
 
   const control: CronJobControl = {

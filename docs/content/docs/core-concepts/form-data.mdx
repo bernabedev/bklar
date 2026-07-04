@@ -1,0 +1,23 @@
+---
+title: Form Data
+description: Access multipart/form-data without the upload package.
+---
+
+# Form Data
+
+`ctx.formData()` provides core-level access to multipart form data without needing the `@bklarjs/upload` package. Results are cached after the first call.
+
+## Reading Form Fields
+
+```typescript
+app.post("/submit", async (ctx) => {
+  const fd = await ctx.formData();
+  const name = fd.get("name");
+  const email = fd.get("email");
+  return ctx.json({ name, email });
+});
+```
+
+## File Upload (Light)
+
+For full file upload support with size limits and MIME type validation, use `@bklarjs/upload`. For simple form data access without files, `ctx.formData()` is sufficient.

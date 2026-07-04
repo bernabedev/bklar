@@ -19,12 +19,12 @@ export function compose(middleware: Middleware[]) {
         return Promise.reject(new Error("next() called multiple times"));
       index = i;
       let fn = middleware[i];
-      
+
       if (i === middleware.length) {
-          if (next) return next();
-          return Promise.resolve();
+        if (next) return next();
+        return Promise.resolve();
       }
-      
+
       if (!fn) return Promise.resolve();
 
       try {

@@ -101,17 +101,17 @@ export function swagger(options: SwaggerOptions = {}) {
         () =>
           new Response(getSwaggerHTML(jsonPath), {
             headers: { "Content-Type": "text/html" },
-          })
+          }),
       );
 
       // Serve Static Assets
       app.get(
         `${config.path}/swagger-ui.css`,
-        () => new Response(Bun.file(`${assetsPath}/swagger-ui.css`))
+        () => new Response(Bun.file(`${assetsPath}/swagger-ui.css`)),
       );
       app.get(
         `${config.path}/swagger-ui-bundle.js`,
-        () => new Response(Bun.file(`${assetsPath}/swagger-ui-bundle.js`))
+        () => new Response(Bun.file(`${assetsPath}/swagger-ui-bundle.js`)),
       );
     }
 
@@ -122,7 +122,7 @@ export function swagger(options: SwaggerOptions = {}) {
         () =>
           new Response(getScalarHTML(jsonPath, config.ui.scalarConfig), {
             headers: { "Content-Type": "text/html" },
-          })
+          }),
       );
     }
 

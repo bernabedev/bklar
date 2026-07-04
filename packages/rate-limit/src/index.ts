@@ -99,7 +99,7 @@ export function rateLimit(options: RateLimitOptions = {}): Middleware {
     // 1. Get and Filter Hits
     const currentHits = hits.get(key) || [];
     const recentHits = currentHits.filter(
-      (timestamp) => timestamp > windowStart
+      (timestamp) => timestamp > windowStart,
     );
 
     // 2. Calculate Header Values
@@ -144,7 +144,7 @@ export function rateLimit(options: RateLimitOptions = {}): Middleware {
     if (standardHeaders) {
       headers["X-RateLimit-Remaining"] = Math.max(
         0,
-        max - recentHits.length
+        max - recentHits.length,
       ).toString();
     }
 
@@ -156,8 +156,8 @@ export function rateLimit(options: RateLimitOptions = {}): Middleware {
       response instanceof Response
         ? response
         : (ctx as any)._res instanceof Response
-        ? (ctx as any)._res
-        : null;
+          ? (ctx as any)._res
+          : null;
 
     if (targetResponse && standardHeaders) {
       for (const [k, v] of Object.entries(headers)) {

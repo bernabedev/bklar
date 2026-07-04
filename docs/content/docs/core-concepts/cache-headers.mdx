@@ -1,0 +1,53 @@
+---
+title: Cache Headers
+description: Set Cache-Control, ETag, and Last-Modified headers for HTTP caching.
+---
+
+# Cache Headers
+
+Bklar provides helpers on the context for setting standard HTTP caching headers — `Cache-Control`, `ETag`, and `Last-Modified`.
+
+## Cache-Control
+
+Use `ctx.cacheControl()` to set directives:
+
+```typescript
+app.get("/static", (ctx) => {
+  ctx.cacheControl({
+    public: true,
+    maxAge: 3600,
+    immutable: true,
+  });
+  return ctx.text("cached response");
+});
+```
+
+Supported directives: `public`, `private`, `maxAge`, `sMaxAge`, `noCache`, `noStore`, `noTransform`, `mustRevalidate`, `proxyRevalidate`, `mustUnderstand`, `immutable`, `staleWhileRevalidate`, `staleIfError`.
+
+## ETag
+
+Use `ctx.etag()` for conditional caching with `If-None-Match`:
+
+```typescript
+app.get("/data", (ctx) => {
+  const hash = computeHash(data);
+  const notModified = ctx.etag(hash);
+  if (notModified) return notModified; // 304
+  return ctx.json(data);
+});
+```
+
+## Last-Modified
+
+Use `ctx.lastModified()` for time-based conditional caching:
+
+```typescript
+app.get("/feed", (ctx) => {
+  const lastUpdate = new Date("2024-01-15");
+  const notModified = ctx.lastModified(lastUpdate);
+  if (notModified) return notModified; // 304
+  return ctx.json(feed);
+});
+```
+
+Both methods automatically check the incoming `If-None-Match` / `If-Modified-Since` headers and return `304 Not Modified` when appropriate.

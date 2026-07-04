@@ -25,7 +25,7 @@ describe("@bklarjs/jwt Package Tests", () => {
       const wrongSecret = "a-different-secret";
 
       await expect(verify(token, wrongSecret)).rejects.toThrow(
-        errors.JWSSignatureVerificationFailed
+        errors.JWSSignatureVerificationFailed,
       );
     });
 
@@ -35,7 +35,7 @@ describe("@bklarjs/jwt Package Tests", () => {
       });
 
       await expect(verify(token, JWT_SECRET)).rejects.toThrow(
-        errors.JWTExpired
+        errors.JWTExpired,
       );
     });
 
@@ -144,7 +144,7 @@ describe("@bklarjs/jwt Package Tests", () => {
           (ctx) => {
             return ctx.json({ user: ctx.state.jwt || null });
           },
-          { middlewares: [authMiddleware] }
+          { middlewares: [authMiddleware] },
         );
 
         const res = await app.request("/optional-auth");
@@ -164,7 +164,7 @@ describe("@bklarjs/jwt Package Tests", () => {
           (ctx) => {
             return ctx.json({ user: ctx.state.jwt || null });
           },
-          { middlewares: [authMiddleware] }
+          { middlewares: [authMiddleware] },
         );
 
         const res = await app.request("/optional-auth", {
@@ -187,7 +187,7 @@ describe("@bklarjs/jwt Package Tests", () => {
           (ctx) => {
             return ctx.json({ user: ctx.state.jwt || null });
           },
-          { middlewares: [authMiddleware] }
+          { middlewares: [authMiddleware] },
         );
 
         const token = await sign(payload, JWT_SECRET);

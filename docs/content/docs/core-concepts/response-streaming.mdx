@@ -1,0 +1,56 @@
+---
+title: Response Streaming
+description: Stream large responses with ReadableStream and ctx.stream()
+---
+
+# Response Streaming
+
+Bklar supports returning `ReadableStream` directly from handlers. Use this for large file downloads, AI token streaming, or real-time data exports.
+
+## Direct ReadableStream Return
+
+Simply return a `ReadableStream` — Bklar auto-detects it and wraps it with sensible defaults:
+
+```typescript
+app.get("/report", () => {
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode("header\n"));
+      for (let i = 0; i < 1000; i++) {
+        controller.enqueue(new TextEncoder().encode(`row ${i}\n`));
+      }
+      controller.close();
+    },
+  });
+});
+```
+
+## Using ctx.stream()
+
+For custom status codes and headers, use `ctx.stream()`:
+
+```typescript
+app.get("/download", (ctx) => {
+  const stream = new ReadableStream({
+    // ...
+  });
+
+  return ctx.stream(stream, 200, {
+    "Content-Type": "text/csv",
+    "Content-Disposition": 'attachment; filename="data.csv"',
+  });
+});
+```
+
+## SSE for Streaming
+
+For server-to-client event streaming with standard event semantics, use SSE instead:
+
+```typescript
+app.get("/events", (ctx) => {
+  const sse = ctx.sse();
+  sse.send("progress", JSON.stringify({ percent: 50 }));
+  sse.close();
+  return undefined;
+});
+```

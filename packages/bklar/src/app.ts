@@ -154,7 +154,13 @@ export class BklarApp<Routes = {}> {
         }
 
         if (!(res instanceof Response)) {
-          if (typeof res === "object" || Array.isArray(res)) {
+          if (res instanceof ReadableStream) {
+            res = ctx.stream(res);
+          } else if (Symbol.asyncIterator in Object(res)) {
+            // Async generator — stream each yielded value as SSE
+            res = ctx.sse();
+            return res;
+          } else if (typeof res === "object" || Array.isArray(res)) {
             res = ctx.json(res);
           } else if (typeof res === "string") {
             res = ctx.text(res);
@@ -406,7 +412,8 @@ export class BklarApp<Routes = {}> {
     const requestIdHeaderName =
       this.options.requestId?.headerName || "X-Request-Id";
     const existingId = req.headers.get(requestIdHeaderName.toLowerCase());
-    const generator = this.options.requestId?.generator || (() => crypto.randomUUID());
+    const generator =
+      this.options.requestId?.generator || (() => crypto.randomUUID());
     const requestId = existingId || generator();
 
     const ctx = new Context<any>(
@@ -418,6 +425,7 @@ export class BklarApp<Routes = {}> {
       requestIdHeaderName,
     );
     ctx.query = Object.fromEntries(new URL(req.url).searchParams.entries());
+    ctx._errorFormat = this.options.errorFormat || "basic";
     return ctx;
   }
 
@@ -536,7 +544,9 @@ export class BklarApp<Routes = {}> {
         chain.push(async (ctx, next) => {
           const cl = ctx.req.headers.get("content-length");
           if (cl && parseInt(cl, 10) > this.options.maxBodySize!) {
-            throw Object.assign(new Error("Payload Too Large"), { status: 413 });
+            throw Object.assign(new Error("Payload Too Large"), {
+              status: 413,
+            });
           }
           return next();
         });
@@ -593,15 +603,24 @@ export class BklarApp<Routes = {}> {
         return new Response("Internal Server Error", { status: 500 });
       } catch (error: any) {
         if (error?.status === 413) {
-          const res = new Response(JSON.stringify({
-            error: "Payload Too Large",
-            message: "Request body exceeds size limit",
-            statusCode: 413,
-          }), { status: 413, headers: { "Content-Type": "application/json" } });
+          const res = new Response(
+            JSON.stringify({
+              error: "Payload Too Large",
+              message: "Request body exceeds size limit",
+              statusCode: 413,
+            }),
+            { status: 413, headers: { "Content-Type": "application/json" } },
+          );
 
-          ctx._headers.forEach((value, key) => { res.headers.set(key, value); });
-          for (const cookie of ctx._setCookies) { res.headers.append("Set-Cookie", cookie); }
-          if (this.hooks.onResponse) { await this.hooks.onResponse(ctx, res); }
+          ctx._headers.forEach((value, key) => {
+            res.headers.set(key, value);
+          });
+          for (const cookie of ctx._setCookies) {
+            res.headers.append("Set-Cookie", cookie);
+          }
+          if (this.hooks.onResponse) {
+            await this.hooks.onResponse(ctx, res);
+          }
           return res;
         }
 

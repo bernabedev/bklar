@@ -1,0 +1,12 @@
+pre-commit:
+  parallel: true
+  commands:
+    typecheck:
+      glob: "packages/*/src/**/*.ts"
+      run: bun run --filter './packages/*' build --noEmit || true
+    test:
+      glob: "packages/*/src/**/*.ts"
+      run: bun test --timeout 15000
+    format:
+      glob: "*.{ts,tsx,js,jsx,json,md,mdx}"
+      run: bun x prettier --write ./packages || true

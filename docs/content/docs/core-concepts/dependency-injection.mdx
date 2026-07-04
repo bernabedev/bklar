@@ -1,0 +1,43 @@
+---
+title: Dependency Injection
+description: Lightweight app-level DI container with type-safe resolution.
+---
+
+# Dependency Injection
+
+Bklar provides a static DI container via `Context.provide()` and `ctx.get()`. Providers are registered globally and resolved per-request.
+
+## Registering Providers
+
+```typescript
+import { Context } from "bklar";
+
+Context.provide("db", () => new Database("app.db"));
+Context.provide("redis", () => createRedisClient());
+```
+
+## Resolving in Handlers
+
+```typescript
+app.get("/users", (ctx) => {
+  const db = ctx.get<Database>("db");
+  const users = db.query("SELECT * FROM users");
+  return ctx.json(users);
+});
+```
+
+Type-safe resolution uses generics: `ctx.get<Database>("db")`.
+
+## With Services Pattern
+
+```typescript
+class UserService {
+  constructor(private db: Database) {}
+  async findById(id: string) { /* ... */ }
+}
+
+Context.provide("userService", () => {
+  const db = Context._providers.get("db")?.();
+  return new UserService(db);
+});
+```

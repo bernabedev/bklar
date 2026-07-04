@@ -174,6 +174,6 @@ export function generateTsConfig() {
       },
     },
     null,
-    2
+    2,
   );
 }

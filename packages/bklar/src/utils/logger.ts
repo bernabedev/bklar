@@ -16,7 +16,7 @@ export const defaultLogger = (
   req: Request,
   time: number,
   status: number,
-  ip?: string
+  ip?: string,
 ) => {
   const url = new URL(req.url);
 
@@ -28,10 +28,10 @@ export const defaultLogger = (
     status >= 500
       ? colors.red
       : status >= 400
-      ? colors.yellow
-      : status >= 300
-      ? colors.cyan
-      : colors.green;
+        ? colors.yellow
+        : status >= 300
+          ? colors.cyan
+          : colors.green;
 
   const durationMs = time.toFixed(0);
   const methodColor = colors.cyan;
@@ -43,6 +43,6 @@ export const defaultLogger = (
       `${methodColor}${method.padEnd(7)}${colors.reset} | ` +
       `${path.padEnd(30)} | ` +
       `${durationColor}${durationMs}ms${colors.reset} | ` +
-      `${ip || "unknown-ip"}`
+      `${ip || "unknown-ip"}`,
   );
 };

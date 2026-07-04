@@ -102,8 +102,8 @@ export function cache(options: CacheOptions = {}): Middleware {
       res instanceof Response
         ? res
         : (ctx as any)._res instanceof Response
-        ? (ctx as any)._res
-        : null;
+          ? (ctx as any)._res
+          : null;
 
     // 4. Cache Eligibility Check
     // We only cache 200 OK responses

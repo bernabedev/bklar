@@ -1,0 +1,38 @@
+---
+title: Problem JSON (RFC 7807)
+description: Standardized error responses with type, title, status, and detail.
+---
+
+# Problem JSON (RFC 7807)
+
+Bklar supports RFC 7807 Problem Details for HTTP APIs. Enable it via the `errorFormat` option.
+
+## Configuration
+
+```typescript
+const app = Bklar({
+  errorFormat: "problemJson",
+});
+```
+
+## Response Format
+
+With `problemJson` enabled, error responses use the standard structure:
+
+```json
+{
+  "type": "https://httpstatuses.io/404",
+  "title": "Resource not found",
+  "status": 404,
+  "detail": "User not found"
+}
+```
+
+| Field | Description |
+|:------|:------------|
+| `type` | URI identifying the problem type |
+| `title` | Short human-readable summary |
+| `status` | HTTP status code |
+| `detail` | Human-readable explanation |
+
+The default format (`"basic"`) returns `{ "message": "..." }` instead.

@@ -9,10 +9,14 @@ beforeEach(() => {
 
 describe("Timeout Support", () => {
   it("should complete if within timeout", async () => {
-    app.get("/fast", async (ctx) => {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-      return { success: true };
-    }, { timeout: 200 });
+    app.get(
+      "/fast",
+      async (ctx) => {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        return { success: true };
+      },
+      { timeout: 200 },
+    );
 
     const res = await app.request("/fast");
     expect(res.status).toBe(200);
@@ -21,10 +25,14 @@ describe("Timeout Support", () => {
   });
 
   it("should timeout if handler takes too long", async () => {
-    app.get("/slow", async (ctx) => {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      return { success: true };
-    }, { timeout: 100 });
+    app.get(
+      "/slow",
+      async (ctx) => {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        return { success: true };
+      },
+      { timeout: 100 },
+    );
 
     const res = await app.request("/slow");
     expect(res.status).toBe(504);
@@ -34,13 +42,17 @@ describe("Timeout Support", () => {
 
   it("should provide an abort signal to the handler", async () => {
     let aborted = false;
-    app.get("/abort", async (ctx) => {
-      ctx.signal?.addEventListener("abort", () => {
-        aborted = true;
-      });
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      return { success: true };
-    }, { timeout: 100 });
+    app.get(
+      "/abort",
+      async (ctx) => {
+        ctx.signal?.addEventListener("abort", () => {
+          aborted = true;
+        });
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        return { success: true };
+      },
+      { timeout: 100 },
+    );
 
     const res = await app.request("/abort");
     expect(res.status).toBe(504);
@@ -49,9 +61,13 @@ describe("Timeout Support", () => {
 
   it("should clear timeout if handler finishes", async () => {
     // This is hard to test directly from outside, but we can check if it works correctly
-    app.get("/clear", async (ctx) => {
-      return { success: true };
-    }, { timeout: 1000 });
+    app.get(
+      "/clear",
+      async (ctx) => {
+        return { success: true };
+      },
+      { timeout: 1000 },
+    );
 
     const res = await app.request("/clear");
     expect(res.status).toBe(200);

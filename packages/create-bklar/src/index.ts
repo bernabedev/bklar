@@ -130,7 +130,7 @@ async function init() {
       onCancel: () => {
         throw new Error(pc.red("✖") + " Operation cancelled");
       },
-    }
+    },
   );
 
   const root = path.join(cwd, targetDir);
@@ -151,7 +151,7 @@ async function init() {
   });
   fs.writeFileSync(
     path.join(root, "package.json"),
-    JSON.stringify(pkg, null, 2)
+    JSON.stringify(pkg, null, 2),
   );
 
   // 2. Generate config
@@ -179,7 +179,7 @@ export class HealthController {
 }`;
     fs.writeFileSync(
       path.join(root, "src", "controllers", "health.ts"),
-      ctrlCode.trim()
+      ctrlCode.trim(),
     );
   }
 

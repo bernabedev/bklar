@@ -80,23 +80,39 @@ export class HttpError extends Error {
     Object.setPrototypeOf(this, new.target.prototype);
   }
 
-  public toResponse(): Response {
-    const body: Record<string, any> = { message: this.message };
+  public toResponse(format: "basic" | "problemJson" = "basic"): Response {
+    let body: Record<string, any>;
 
-    if (this.details) {
-      body.errors = this.details;
+    if (format === "problemJson") {
+      body = {
+        type: `https://httpstatuses.io/${this.statusCode}`,
+        title: ERROR_METADATA[this.type].defaultMessage,
+        status: this.statusCode,
+        detail: this.message,
+        instance: undefined,
+      };
+      if (this.details) {
+        body.errors = this.details;
+      }
+    } else {
+      body = { message: this.message };
+      if (this.details) {
+        body.errors = this.details;
+      }
     }
 
     return new Response(JSON.stringify(body), {
       status: this.statusCode,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/problem+json" },
     });
   }
 }
 
-export function defaultErrorHandler(error: unknown): Response {
+export function defaultErrorHandler(error: unknown, ctx?: any): Response {
+  const format = ctx?._errorFormat || "basic";
+
   if (error instanceof HttpError) {
-    return error.toResponse();
+    return error.toResponse(format);
   }
 
   if (error instanceof ZodError) {
@@ -104,10 +120,10 @@ export function defaultErrorHandler(error: unknown): Response {
       ErrorType.VALIDATION,
       "Validation failed",
       error.flatten().fieldErrors,
-    ).toResponse();
+    ).toResponse(format);
   }
 
-  return new HttpError(ErrorType.INTERNAL_SERVER).toResponse();
+  return new HttpError(ErrorType.INTERNAL_SERVER).toResponse(format);
 }
 
 export class NotFoundError extends HttpError {

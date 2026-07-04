@@ -73,7 +73,7 @@ describe("Rate Limit Middleware", () => {
       rateLimit({
         max: 1,
         keyGenerator: (ctx) => ctx.req.headers.get("Authorization") || "none",
-      })
+      }),
     );
     app.get("/", (ctx) => ctx.text("ok"));
 
@@ -103,7 +103,7 @@ describe("Rate Limit Middleware", () => {
         max: 1,
         windowMs: 1000,
         skip: (ctx) => ctx.req.headers.get("X-Skip-RateLimit") === "true",
-      })
+      }),
     );
     app.get("/", (ctx) => ctx.text("ok"));
 

@@ -8,4 +8,3 @@ export class RadixNode {
   handlers: Record<string, Middleware[]> = {};
   wsHandlers: Record<string, WSHandlers> = {};
 }
-

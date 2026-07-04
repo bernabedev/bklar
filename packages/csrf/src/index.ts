@@ -54,11 +54,17 @@ export function csrf(options: CsrfOptions = {}): Middleware {
     const headerToken = ctx.req.headers.get(headerName);
     let bodyToken: string | undefined;
 
-    if (ctx.req.headers.get("content-type")?.includes("application/x-www-form-urlencoded")) {
+    if (
+      ctx.req.headers
+        .get("content-type")
+        ?.includes("application/x-www-form-urlencoded")
+    ) {
       const clone = ctx.req.clone();
       const formData = await clone.formData();
       bodyToken = formData.get(fieldName) as string | undefined;
-    } else if (ctx.req.headers.get("content-type")?.includes("application/json")) {
+    } else if (
+      ctx.req.headers.get("content-type")?.includes("application/json")
+    ) {
       const clone = ctx.req.clone();
       const body = await clone.json();
       bodyToken = body?.[fieldName];
@@ -67,14 +73,17 @@ export function csrf(options: CsrfOptions = {}): Middleware {
     const requestToken = headerToken || bodyToken;
 
     if (!requestToken || requestToken !== cookieToken) {
-      return new Response(JSON.stringify({
-        error: "Forbidden",
-        message: "Invalid CSRF token",
-        statusCode: 403,
-      }), {
-        status: 403,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Forbidden",
+          message: "Invalid CSRF token",
+          statusCode: 403,
+        }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
     }
 
     return next();

@@ -6,7 +6,7 @@ type StripSlash<T> = T extends `/${infer U}` ? U : T;
 // Recursive type to split path string into nested object
 type SplitPath<
   Path extends string,
-  Methods
+  Methods,
 > = Path extends `${infer Part}/${infer Rest}`
   ? { [K in Part]: SplitPath<Rest, Methods> }
   : { [K in Path]: Methods }; // Final segment
@@ -20,8 +20,8 @@ type DeepMerge<T, U> = T extends object
             ? DeepMerge<T[K], U[K]>
             : T[K]
           : K extends keyof U
-          ? U[K]
-          : never;
+            ? U[K]
+            : never;
       }
     : U
   : U;
@@ -45,7 +45,7 @@ type RoutesToClient<Routes> = {
 // UnionToIntersection is needed.
 
 type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
-  k: infer I
+  k: infer I,
 ) => void
   ? I
   : never;

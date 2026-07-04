@@ -16,7 +16,7 @@ export async function sign(
   payload: JWTPayload,
   secret: string | Uint8Array,
   alg: string = "HS256",
-  options?: SignOptions
+  options?: SignOptions,
 ): Promise<string> {
   const secretKey =
     typeof secret === "string" ? new TextEncoder().encode(secret) : secret;
@@ -43,7 +43,7 @@ export async function sign(
 export async function verify<T extends JWTPayload = JWTPayload>(
   token: string,
   secret: string | Uint8Array,
-  algorithms?: string[]
+  algorithms?: string[],
 ): Promise<T> {
   const secretKey =
     typeof secret === "string" ? new TextEncoder().encode(secret) : secret;

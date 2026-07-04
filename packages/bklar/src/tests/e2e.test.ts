@@ -6,7 +6,9 @@ let servers: Array<ReturnType<BklarApp["listen"]>> = [];
 
 afterEach(() => {
   for (const s of servers) {
-    try { s.stop(false); } catch {}
+    try {
+      s.stop(false);
+    } catch {}
   }
   servers = [];
 });
@@ -89,7 +91,7 @@ describe("E2E Integration Tests", () => {
       expect(res.headers.get("Content-Type")).toBe("text/event-stream");
       const body = await res.text();
       expect(body).toContain("event: ping");
-      expect(body).toContain('id: 1');
+      expect(body).toContain("id: 1");
       server.stop(false);
     });
   });
@@ -97,7 +99,9 @@ describe("E2E Integration Tests", () => {
   describe("Error Handling", () => {
     it("should return error as JSON for thrown errors", async () => {
       const app = Bklar({ logger: false });
-      app.get("/boom", () => { throw new Error("kaboom"); });
+      app.get("/boom", () => {
+        throw new Error("kaboom");
+      });
       const server = noThrowStop(app.listen(0));
 
       const res = await fetch(`http://localhost:${server.port}/boom`);
@@ -168,7 +172,9 @@ describe("E2E Integration Tests", () => {
       const app = Bklar({
         logger: false,
         hooks: {
-          onStart: () => { started = true; },
+          onStart: () => {
+            started = true;
+          },
         },
       });
       const server = app.listen(0);
@@ -182,7 +188,9 @@ describe("E2E Integration Tests", () => {
       const app = Bklar({
         logger: false,
         hooks: {
-          onResponse: () => { responseCount++; },
+          onResponse: () => {
+            responseCount++;
+          },
         },
       });
       const server = noThrowStop(app.listen(0));
@@ -191,7 +199,7 @@ describe("E2E Integration Tests", () => {
       server.stop(false);
 
       // Wait for the hook to fire (happens after response is sent)
-      await new Promise(r => setTimeout(r, 20));
+      await new Promise((r) => setTimeout(r, 20));
       expect(responseCount).toBeGreaterThanOrEqual(1);
     });
   });
@@ -200,10 +208,22 @@ describe("E2E Integration Tests", () => {
     it("should maintain order when mixed priorities used in real server", async () => {
       const order: string[] = [];
       const app = Bklar({ logger: false });
-      app.use(async (_, next) => { order.push("C"); return next(); }, 100);
-      app.use(async (_, next) => { order.push("A"); return next(); }, -100);
-      app.use(async (_, next) => { order.push("B"); return next(); }, 0);
-      app.get("/", () => { order.push("H"); return "ok"; });
+      app.use(async (_, next) => {
+        order.push("C");
+        return next();
+      }, 100);
+      app.use(async (_, next) => {
+        order.push("A");
+        return next();
+      }, -100);
+      app.use(async (_, next) => {
+        order.push("B");
+        return next();
+      }, 0);
+      app.get("/", () => {
+        order.push("H");
+        return "ok";
+      });
       const server = noThrowStop(app.listen(0));
 
       await fetch(`http://localhost:${server.port}/`);

@@ -29,8 +29,8 @@ export function installDependencies(root: string) {
   } catch (e) {
     console.warn(
       pc.yellow(
-        "Failed to install dependencies. Please run 'bun install' manually."
-      )
+        "Failed to install dependencies. Please run 'bun install' manually.",
+      ),
     );
   }
 }
@@ -40,7 +40,7 @@ export function initGit(root: string) {
     execSync("git init", { cwd: root, stdio: "ignore" });
     fs.writeFileSync(
       path.join(root, ".gitignore"),
-      "node_modules\ndist\n.env\n"
+      "node_modules\ndist\n.env\n",
     );
     console.log(`✔ Initialized Git repository.`);
   } catch (e) {

@@ -22,8 +22,8 @@ describe("New Core Features", () => {
       expect(res.headers.get("Connection")).toBe("keep-alive");
 
       const body = await res.text();
-      expect(body).toContain('id: 1');
-      expect(body).toContain('event: message');
+      expect(body).toContain("id: 1");
+      expect(body).toContain("event: message");
       expect(body).toContain('data: {"text":"hello"}');
       expect(body).toContain('data: {"text":"world"}');
     });
@@ -175,11 +175,23 @@ describe("New Core Features", () => {
       const executionOrder: string[] = [];
       const app = Bklar({ logger: false });
 
-      app.use(async (ctx, next) => { executionOrder.push("1"); return next(); });
-      app.use(async (ctx, next) => { executionOrder.push("2"); return next(); });
-      app.use(async (ctx, next) => { executionOrder.push("3"); return next(); });
+      app.use(async (ctx, next) => {
+        executionOrder.push("1");
+        return next();
+      });
+      app.use(async (ctx, next) => {
+        executionOrder.push("2");
+        return next();
+      });
+      app.use(async (ctx, next) => {
+        executionOrder.push("3");
+        return next();
+      });
 
-      app.get("/", () => { executionOrder.push("h"); return "ok"; });
+      app.get("/", () => {
+        executionOrder.push("h");
+        return "ok";
+      });
 
       await app.request("/");
       expect(executionOrder).toEqual(["1", "2", "3", "h"]);
@@ -198,7 +210,7 @@ describe("New Core Features", () => {
       const res = await app.request("/");
       const timing = res.headers.get("Server-Timing");
       expect(timing).toContain("db");
-      expect(timing).toContain("desc=\"Database query\"");
+      expect(timing).toContain('desc="Database query"');
       expect(timing).toContain("dur=5");
       expect(timing).toContain("cache");
       expect(timing).toContain("dur=1");
@@ -215,8 +227,11 @@ describe("New Core Features", () => {
     it("ctx.time() should measure and add timing", async () => {
       const app = Bklar({ logger: false });
       app.get("/", async (ctx) => {
-        await ctx.time("async-op", () => new Promise(r => setTimeout(r, 20)));
-        ctx.time("sync-op", () => { let x = 0; for (let i = 0; i < 1000; i++) x += i; });
+        await ctx.time("async-op", () => new Promise((r) => setTimeout(r, 20)));
+        ctx.time("sync-op", () => {
+          let x = 0;
+          for (let i = 0; i < 1000; i++) x += i;
+        });
         return ctx.text("ok");
       });
 
@@ -292,8 +307,12 @@ describe("New Core Features", () => {
       const app = Bklar({
         logger: false,
         hooks: {
-          onRequest: (ctx) => { requestCalls.push(ctx.requestId); },
-          onResponse: (ctx, res) => { responseCalls.push({ status: res.status }); },
+          onRequest: (ctx) => {
+            requestCalls.push(ctx.requestId);
+          },
+          onResponse: (ctx, res) => {
+            responseCalls.push({ status: res.status });
+          },
         },
       });
       app.get("/", () => "ok");
@@ -310,10 +329,14 @@ describe("New Core Features", () => {
       const app = Bklar({
         logger: false,
         hooks: {
-          onResponse: () => { hooksCalled.push("response"); },
+          onResponse: () => {
+            hooksCalled.push("response");
+          },
         },
       });
-      app.get("/", () => { throw new Error("boom"); });
+      app.get("/", () => {
+        throw new Error("boom");
+      });
 
       const res = await app.request("/");
       expect(res.status).toBe(500);

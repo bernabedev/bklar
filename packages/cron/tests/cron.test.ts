@@ -19,7 +19,7 @@ describe("Cron Middleware", () => {
         pattern: "* * * * *", // Every minute
         autoStart: false, // Don't actually run it
         run: () => {},
-      })
+      }),
     );
 
     app.get("/", (ctx) => {
@@ -43,7 +43,7 @@ describe("Cron Middleware", () => {
         pattern: "* * * * *",
         autoStart: false,
         run: () => {},
-      })
+      }),
     );
 
     app.get("/control", (ctx) => {
@@ -81,7 +81,7 @@ describe("Cron Middleware", () => {
         run: () => {
           executed = true;
         },
-      })
+      }),
     );
 
     // Start server logic to init middleware

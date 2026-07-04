@@ -13,7 +13,7 @@ describe("Helmet Middleware", () => {
     expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
     expect(res.headers.get("X-Frame-Options")).toBe("SAMEORIGIN");
     expect(res.headers.get("Strict-Transport-Security")).toContain(
-      "max-age=15552000"
+      "max-age=15552000",
     );
     expect(res.headers.get("X-XSS-Protection")).toBe("0");
     expect(res.headers.get("Referrer-Policy")).toBe("no-referrer");
@@ -26,7 +26,7 @@ describe("Helmet Middleware", () => {
       helmet({
         xFrameOptions: false,
         xXssProtection: false,
-      })
+      }),
     );
     app.get("/", (ctx) => ctx.text("ok"));
 
@@ -47,7 +47,7 @@ describe("Helmet Middleware", () => {
           includeSubDomains: false,
           preload: true,
         },
-      })
+      }),
     );
     app.get("/", (ctx) => ctx.text("ok"));
 
@@ -70,7 +70,7 @@ describe("Helmet Middleware", () => {
             upgradeInsecureRequests: [],
           },
         },
-      })
+      }),
     );
     app.get("/", (ctx) => ctx.text("ok"));
 
@@ -92,7 +92,7 @@ describe("Helmet Middleware", () => {
           reportOnly: true,
           directives: { defaultSrc: ["'self'"] },
         },
-      })
+      }),
     );
     app.get("/", (ctx) => ctx.text("ok"));
 
@@ -108,17 +108,17 @@ describe("Helmet Middleware", () => {
       helmet({
         crossOriginOpenerPolicy: "same-origin-allow-popups",
         crossOriginResourcePolicy: "cross-origin",
-      })
+      }),
     );
     app.get("/", (ctx) => ctx.text("ok"));
 
     const res = await app.request("/");
 
     expect(res.headers.get("Cross-Origin-Opener-Policy")).toBe(
-      "same-origin-allow-popups"
+      "same-origin-allow-popups",
     );
     expect(res.headers.get("Cross-Origin-Resource-Policy")).toBe(
-      "cross-origin"
+      "cross-origin",
     );
   });
 });

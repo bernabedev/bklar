@@ -38,8 +38,8 @@ export function logger(options: RequestLoggerOptions = {}): Middleware {
         res instanceof Response
           ? res
           : (ctx as any)._res instanceof Response
-          ? (ctx as any)._res
-          : null;
+            ? (ctx as any)._res
+            : null;
 
       if (!response) return res;
 
@@ -86,7 +86,7 @@ export function logger(options: RequestLoggerOptions = {}): Middleware {
           },
           res: { status: 500, durationMs },
         },
-        "Unhandled Exception"
+        "Unhandled Exception",
       );
 
       throw err; // Re-throw so the global ErrorHandler catches it

@@ -75,7 +75,7 @@ app.get(
         "404": { description: "User not found." },
       },
     },
-  }
+  },
 );
 ```
 
@@ -150,11 +150,9 @@ app.get(
       summary: "Get the current user's profile",
       tags: ["Users"],
       security: [{ bearerAuth: [] }], // This endpoint requires bearer auth
-      responses: {
-        /* ... */
-      },
+      responses: {/* ... */},
     },
-  }
+  },
 );
 ```
 

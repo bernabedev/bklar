@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tests](https://img.shields.io/github/actions/workflow/status/bernabedev/bklar/test.yml?branch=main&label=tests)](https://github.com/bernabedev/bklar/actions)
 
-**bklar** (pronounced *buh-klar*) is a minimalist, high-performance web framework built specifically for [Bun](https://bun.sh/).
+**bklar** (pronounced _buh-klar_) is a minimalist, high-performance web framework built specifically for [Bun](https://bun.sh/).
 
 Designed for production excellence, it combines the raw speed of Bun with a robust ecosystem, first-class TypeScript support, and a developer experience inspired by the best modern frameworks.
 
@@ -50,17 +50,17 @@ app.get(
   "/users/:id",
   (ctx) => {
     // ctx.params.id is strictly typed as a number here!
-    return ctx.json({ 
-      id: ctx.params.id, 
-      name: "Bun User" 
+    return ctx.json({
+      id: ctx.params.id,
+      name: "Bun User",
     });
   },
   {
     schemas: {
       // Automatic validation and coercion
-      params: z.object({ id: z.coerce.number() })
-    }
-  }
+      params: z.object({ id: z.coerce.number() }),
+    },
+  },
 );
 
 app.listen(3000);
@@ -71,13 +71,17 @@ app.listen(3000);
 The `Context` object (`ctx`) provides helpers to manage requests and responses uniformly.
 
 ### `ctx.json(data, status?, headers?)`
+
 Returns a JSON response. Automatically sets `Content-Type: application/json`.
 
 ### `ctx.text(data, status?, headers?)`
+
 Returns a text response. Automatically sets `Content-Type: text/plain`.
 
 ### `ctx.download(file, filename?, headers?)`
+
 Serves a file with correct headers.
+
 - **file:** `Blob` or `BunFile` (from `Bun.file()`).
 - **filename:** Optional. Sets `Content-Disposition: attachment; filename="..."`.
 - **headers:** Optional custom headers.
@@ -102,7 +106,7 @@ app.ws("/chat", {
   message(ws, msg) {
     // Native Pub/Sub support
     ws.publish("global-chat", `New message: ${msg}`);
-  }
+  },
 });
 ```
 
@@ -111,16 +115,19 @@ app.ws("/chat", {
 Bklar v2 comes with a suite of official, high-performance packages designed to work perfectly together.
 
 ### Security
+
 - **[@bklarjs/helmet](https://npmjs.com/package/@bklarjs/helmet):** Secure your app with essential HTTP headers (CSP, HSTS, XSS).
 - **[@bklarjs/cors](https://npmjs.com/package/@bklarjs/cors):** Cross-Origin Resource Sharing middleware.
 - **[@bklarjs/jwt](https://npmjs.com/package/@bklarjs/jwt):** JSON Web Token authentication.
 - **[@bklarjs/rate-limit](https://npmjs.com/package/@bklarjs/rate-limit):** Protection against brute-force and DDoS attacks.
 
 ### Performance
+
 - **[@bklarjs/cache](https://npmjs.com/package/@bklarjs/cache):** Server-side caching with ETag support and pluggable stores (Redis/Memory).
 - **[@bklarjs/compression](https://npmjs.com/package/@bklarjs/compression):** Gzip/Deflate compression using Bun's native APIs.
 
 ### Utilities
+
 - **[@bklarjs/logger](https://npmjs.com/package/@bklarjs/logger):** Production-ready structured logging (JSON) with request correlation.
 - **[@bklarjs/upload](https://npmjs.com/package/@bklarjs/upload):** Handle multipart file uploads (Memory or Disk).
 - **[@bklarjs/swagger](https://npmjs.com/package/@bklarjs/swagger):** Auto-generated OpenAPI documentation and Swagger UI.
@@ -136,12 +143,12 @@ import { NotFoundError } from "bklar/errors";
 
 app.get("/item/:id", (ctx) => {
   const item = db.find(ctx.params.id);
-  
+
   if (!item) {
     // Automatically returns 404 with JSON body
     throw new NotFoundError("Item not found");
   }
-  
+
   return ctx.json(item);
 });
 ```

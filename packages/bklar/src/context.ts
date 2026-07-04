@@ -1,5 +1,10 @@
 import type { HeadersInit, BunFile } from "bun";
-import { State, type ServerTimingEntry, type SSEWriter } from "./types";
+import {
+  State,
+  type ServerTimingEntry,
+  type SSEWriter,
+  type CacheControlDirectives,
+} from "./types";
 
 export interface CookieOptions {
   domain?: string;
@@ -27,6 +32,7 @@ export class Context<T extends { query: any; params: any; body: any }> {
   private _requestIdHeaderName: string;
   private _maxBodySize: number;
   private _serverTimings: ServerTimingEntry[] = [];
+  public _errorFormat: "basic" | "problemJson" = "basic";
 
   constructor(
     req: Request,
@@ -207,7 +213,7 @@ export class Context<T extends { query: any; params: any; body: any }> {
     const headers = new Headers({
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
-      "Connection": "keep-alive",
+      Connection: "keep-alive",
     });
     this._mergeHeaders(headers);
     this._appendCookies(headers);
@@ -302,6 +308,96 @@ export class Context<T extends { query: any; params: any; body: any }> {
     return Promise.resolve(result);
   }
 
+  // --- Streaming helpers ---
+
+  stream(
+    stream: ReadableStream,
+    status: number = 200,
+    headers: HeadersInit = {},
+  ): Response {
+    const responseHeaders = new Headers(headers);
+    this._mergeHeaders(responseHeaders);
+    this._appendCookies(responseHeaders);
+    this._appendRequestId(responseHeaders);
+    this._appendServerTiming(responseHeaders);
+    return new Response(stream, { status, headers: responseHeaders });
+  }
+
+  // --- Cache-Control helpers ---
+
+  cacheControl(directives: CacheControlDirectives) {
+    const parts: string[] = [];
+
+    if (directives.public) parts.push("public");
+    if (directives.private) parts.push("private");
+    if (directives.noCache) parts.push("no-cache");
+    if (directives.noStore) parts.push("no-store");
+    if (directives.noTransform) parts.push("no-transform");
+    if (directives.mustRevalidate) parts.push("must-revalidate");
+    if (directives.proxyRevalidate) parts.push("proxy-revalidate");
+    if (directives.mustUnderstand) parts.push("must-understand");
+    if (directives.immutable) parts.push("immutable");
+    if (directives.maxAge !== undefined)
+      parts.push(`max-age=${directives.maxAge}`);
+    if (directives.sMaxAge !== undefined)
+      parts.push(`s-maxage=${directives.sMaxAge}`);
+    if (directives.staleWhileRevalidate !== undefined)
+      parts.push(`stale-while-revalidate=${directives.staleWhileRevalidate}`);
+    if (directives.staleIfError !== undefined)
+      parts.push(`stale-if-error=${directives.staleIfError}`);
+
+    this.setHeader("Cache-Control", parts.join(", "));
+  }
+
+  etag(hash: string) {
+    this.setHeader("ETag", `"${hash}"`);
+    // Check If-None-Match
+    if (this.req.headers.get("If-None-Match") === `"${hash}"`) {
+      return this.status(304);
+    }
+    return null;
+  }
+
+  lastModified(date: Date | string | number) {
+    const d =
+      typeof date === "string" || typeof date === "number"
+        ? new Date(date)
+        : date;
+    this.setHeader("Last-Modified", d.toUTCString());
+
+    const ifModifiedSince = this.req.headers.get("If-Modified-Since");
+    if (ifModifiedSince && new Date(ifModifiedSince) >= d) {
+      return this.status(304);
+    }
+    return null;
+  }
+
+  // --- FormData support ---
+
+  private _formDataParsed = false;
+  private _formData: FormData | null = null;
+
+  async formData(): Promise<FormData> {
+    if (this._formDataParsed) return this._formData!;
+    this._formData = await this.req.formData();
+    this._formDataParsed = true;
+    return this._formData;
+  }
+
+  // --- DI container ---
+
+  private static _providers: Map<string | symbol, any> = new Map();
+
+  static provide<T>(token: string | symbol, factory: () => T): void {
+    Context._providers.set(token, factory);
+  }
+
+  get<T>(token: string | symbol): T {
+    const factory = Context._providers.get(token);
+    if (!factory) throw new Error(`Provider not found: ${String(token)}`);
+    return factory();
+  }
+
   private _appendCookies(headers: Headers) {
     for (const cookie of this._setCookies) {
       headers.append("Set-Cookie", cookie);
@@ -317,7 +413,10 @@ export class Context<T extends { query: any; params: any; body: any }> {
   }
 
   private _appendRequestId(headers: Headers) {
-    if (this.requestId && !headers.has(this._requestIdHeaderName.toLowerCase())) {
+    if (
+      this.requestId &&
+      !headers.has(this._requestIdHeaderName.toLowerCase())
+    ) {
       headers.set(this._requestIdHeaderName, this.requestId);
     }
   }

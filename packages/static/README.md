@@ -75,7 +75,7 @@ app.use(
   staticFiles({
     root: "dist/assets",
     prefix: "/assets",
-  })
+  }),
 );
 ```
 

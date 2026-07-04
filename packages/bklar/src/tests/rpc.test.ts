@@ -17,7 +17,7 @@ const app = Bklar()
       schemas: {
         body: z.object({ text: z.string() }),
       },
-    }
+    },
   )
   .get(
     "/users/:id",
@@ -30,10 +30,10 @@ const app = Bklar()
       schemas: {
         params: z.object({ id: z.string() }),
       },
-    }
+    },
   )
   .get("/cookies", (ctx) => {
-      return { cookie: ctx.getCookie("test-cookie") };
+    return { cookie: ctx.getCookie("test-cookie") };
   });
 
 type AppType = typeof app;
@@ -75,19 +75,19 @@ describe("RPC & Type Inference", () => {
   });
 
   it("should handle cookies", async () => {
-      // 1. Test setCookie via the /users/:id response headers
-      const res = await fetch(`${baseUrl}/users/1`);
-      const cookieHeader = res.headers.get('set-cookie');
-      expect(cookieHeader).toContain("session=12345");
-      expect(cookieHeader).toContain("HttpOnly");
+    // 1. Test setCookie via the /users/:id response headers
+    const res = await fetch(`${baseUrl}/users/1`);
+    const cookieHeader = res.headers.get("set-cookie");
+    expect(cookieHeader).toContain("session=12345");
+    expect(cookieHeader).toContain("HttpOnly");
 
-      // 2. Test getCookie
-      const res2 = await fetch(`${baseUrl}/cookies`, {
-          headers: {
-              'Cookie': 'test-cookie=hello-bun'
-          }
-      });
-      const body = await res2.json();
-      expect(body.cookie).toBe("hello-bun");
+    // 2. Test getCookie
+    const res2 = await fetch(`${baseUrl}/cookies`, {
+      headers: {
+        Cookie: "test-cookie=hello-bun",
+      },
+    });
+    const body = await res2.json();
+    expect(body.cookie).toBe("hello-bun");
   });
 });

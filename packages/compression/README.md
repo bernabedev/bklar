@@ -67,7 +67,7 @@ app.use(
         contentType.includes("application/custom+json")
       );
     },
-  })
+  }),
 );
 ```
 

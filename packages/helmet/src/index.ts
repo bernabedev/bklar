@@ -41,11 +41,7 @@ export interface HelmetOptions {
    * @default "none"
    */
   xPermittedCrossDomainPolicies?:
-    | "none"
-    | "master-only"
-    | "by-content-type"
-    | "all"
-    | false;
+    "none" | "master-only" | "by-content-type" | "all" | false;
 
   /**
    * Strict-Transport-Security settings.
@@ -85,20 +81,14 @@ export interface HelmetOptions {
    * @default "same-origin"
    */
   crossOriginOpenerPolicy?:
-    | "same-origin"
-    | "same-origin-allow-popups"
-    | "unsafe-none"
-    | false;
+    "same-origin" | "same-origin-allow-popups" | "unsafe-none" | false;
 
   /**
    * Cross-Origin-Resource-Policy settings.
    * @default "same-origin"
    */
   crossOriginResourcePolicy?:
-    | "same-origin"
-    | "same-site"
-    | "cross-origin"
-    | false;
+    "same-origin" | "same-site" | "cross-origin" | false;
 
   /**
    * Origin-Agent-Cluster settings.
@@ -139,8 +129,8 @@ export function helmet(options: HelmetOptions = {}): Middleware {
       res instanceof Response
         ? res
         : (ctx as any)._res instanceof Response
-        ? (ctx as any)._res
-        : null;
+          ? (ctx as any)._res
+          : null;
 
     if (!response) return res;
 
@@ -164,7 +154,7 @@ export function helmet(options: HelmetOptions = {}): Middleware {
           // but relying on user string keys is more flexible for new specs.
           const formattedKey = key.replace(
             /[A-Z]/g,
-            (m) => "-" + m.toLowerCase()
+            (m) => "-" + m.toLowerCase(),
           );
           const val = Array.isArray(value) ? value.join(" ") : value;
           return `${formattedKey} ${val}`;
@@ -183,7 +173,7 @@ export function helmet(options: HelmetOptions = {}): Middleware {
     if (config.crossOriginResourcePolicy) {
       headers.set(
         "Cross-Origin-Resource-Policy",
-        config.crossOriginResourcePolicy
+        config.crossOriginResourcePolicy,
       );
     }
 
@@ -238,7 +228,7 @@ export function helmet(options: HelmetOptions = {}): Middleware {
     if (config.xPermittedCrossDomainPolicies) {
       headers.set(
         "X-Permitted-Cross-Domain-Policies",
-        config.xPermittedCrossDomainPolicies
+        config.xPermittedCrossDomainPolicies,
       );
     }
 

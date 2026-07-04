@@ -42,7 +42,7 @@ export class Logger {
   child(bindings: Record<string, any>): Logger {
     const child = new Logger({
       level: Object.keys(LEVEL_PRIORITY).find(
-        (k) => LEVEL_PRIORITY[k as LogLevel] === this.level
+        (k) => LEVEL_PRIORITY[k as LogLevel] === this.level,
       ) as LogLevel,
       redact: Array.from(this.redactKeys),
       format: this.format,

@@ -30,52 +30,52 @@ export function generateOpenAPI(app: BklarApp<any>, info: InfoObject) {
 
     if (route.options.schemas) {
       const schemas = route.options.schemas;
-      
+
       // Parameters (Path and Query)
       const parameters: any[] = [];
-      
+
       if (schemas.params) {
-          const jsonSchema = app.validator.getJsonSchema(schemas.params);
-          if (jsonSchema.properties) {
-              for (const key in jsonSchema.properties) {
-                  parameters.push({
-                      name: key,
-                      in: "path",
-                      required: true,
-                      schema: jsonSchema.properties[key]
-                  });
-              }
+        const jsonSchema = app.validator.getJsonSchema(schemas.params);
+        if (jsonSchema.properties) {
+          for (const key in jsonSchema.properties) {
+            parameters.push({
+              name: key,
+              in: "path",
+              required: true,
+              schema: jsonSchema.properties[key],
+            });
           }
+        }
       }
 
       if (schemas.query) {
         const jsonSchema = app.validator.getJsonSchema(schemas.query);
         if (jsonSchema.properties) {
-            for (const key in jsonSchema.properties) {
-                parameters.push({
-                    name: key,
-                    in: "query",
-                    required: jsonSchema.required?.includes(key) || false,
-                    schema: jsonSchema.properties[key]
-                });
-            }
+          for (const key in jsonSchema.properties) {
+            parameters.push({
+              name: key,
+              in: "query",
+              required: jsonSchema.required?.includes(key) || false,
+              schema: jsonSchema.properties[key],
+            });
+          }
         }
       }
 
       if (parameters.length > 0) {
-          operation.parameters = parameters;
+        operation.parameters = parameters;
       }
 
       // Request Body
       if (schemas.body) {
-          const jsonSchema = app.validator.getJsonSchema(schemas.body);
-          operation.requestBody = {
-              content: {
-                  "application/json": {
-                      schema: jsonSchema
-                  }
-              }
-          };
+        const jsonSchema = app.validator.getJsonSchema(schemas.body);
+        operation.requestBody = {
+          content: {
+            "application/json": {
+              schema: jsonSchema,
+            },
+          },
+        };
       }
     }
 

@@ -92,7 +92,7 @@ app.use(
         imgSrc: ["'self'", "data:", "https://images.com"],
       },
     },
-  })
+  }),
 );
 ```
 
@@ -110,7 +110,7 @@ app.use(
         "upgrade-insecure-requests": [], // Directives with no values use empty array
       },
     },
-  })
+  }),
 );
 ```
 

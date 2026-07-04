@@ -73,7 +73,7 @@ app.use(
 
     // Cache preflight response for 1 day (in seconds)
     maxAge: 86400,
-  })
+  }),
 );
 
 app.get("/api/data", (ctx) => {

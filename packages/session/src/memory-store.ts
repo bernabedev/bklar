@@ -1,12 +1,16 @@
 import type { SessionData, SessionStore } from "./types";
 
 export class MemoryStore implements SessionStore {
-  private store: Map<string, { data: SessionData; expiresAt: number }> = new Map();
+  private store: Map<string, { data: SessionData; expiresAt: number }> =
+    new Map();
   private cleanupInterval: Timer;
 
   constructor() {
     this.cleanupInterval = setInterval(() => this._cleanup(), 60000);
-    if (typeof this.cleanupInterval === "object" && "unref" in this.cleanupInterval) {
+    if (
+      typeof this.cleanupInterval === "object" &&
+      "unref" in this.cleanupInterval
+    ) {
       (this.cleanupInterval as any).unref();
     }
   }

@@ -14,7 +14,7 @@ describe("CORS Middleware", () => {
 
     expect(res.status).toBe(200);
     expect(res.headers.get("Access-Control-Allow-Origin")).toBe(
-      "https://example.com"
+      "https://example.com",
     );
     expect(res.headers.get("Vary")).toBe("Origin");
   });
@@ -40,7 +40,7 @@ describe("CORS Middleware", () => {
       headers: { Origin: "https://trusted.com" },
     });
     expect(res1.headers.get("Access-Control-Allow-Origin")).toBe(
-      "https://trusted.com"
+      "https://trusted.com",
     );
 
     // Blocked Origin (Headers should not be set)
@@ -61,7 +61,7 @@ describe("CORS Middleware", () => {
     });
 
     expect(res.headers.get("Access-Control-Allow-Origin")).toBe(
-      "https://api.example.com"
+      "https://api.example.com",
     );
 
     const resFail = await app.request("/", {
@@ -79,7 +79,7 @@ describe("CORS Middleware", () => {
       headers: { Origin: "https://a.com" },
     });
     expect(resA.headers.get("Access-Control-Allow-Origin")).toBe(
-      "https://a.com"
+      "https://a.com",
     );
 
     const resC = await app.request("/", {
@@ -94,7 +94,7 @@ describe("CORS Middleware", () => {
       cors({
         maxAge: 3600,
         allowedHeaders: ["X-Custom-Header"],
-      })
+      }),
     );
 
     const res = await app.request("/", {
@@ -107,12 +107,12 @@ describe("CORS Middleware", () => {
 
     expect(res.status).toBe(204);
     expect(res.headers.get("Access-Control-Allow-Origin")).toBe(
-      "https://example.com"
+      "https://example.com",
     );
     expect(res.headers.get("Access-Control-Allow-Methods")).toContain("GET");
     expect(res.headers.get("Access-Control-Max-Age")).toBe("3600");
     expect(res.headers.get("Access-Control-Allow-Headers")).toContain(
-      "X-Custom-Header"
+      "X-Custom-Header",
     );
   });
 
@@ -129,7 +129,7 @@ describe("CORS Middleware", () => {
     });
 
     expect(res.headers.get("Access-Control-Allow-Headers")).toBe(
-      "content-type, x-api-key"
+      "content-type, x-api-key",
     );
   });
 
@@ -155,7 +155,7 @@ describe("CORS Middleware", () => {
     });
 
     expect(res.headers.get("Access-Control-Expose-Headers")).toBe(
-      "X-Total-Count"
+      "X-Total-Count",
     );
   });
 
@@ -171,7 +171,7 @@ describe("CORS Middleware", () => {
       (r) => {
         r.get("/private", (ctx) => ctx.text("private"));
       },
-      [cors({ origin: "https://admin.com" })]
+      [cors({ origin: "https://admin.com" })],
     );
 
     // Test Global
@@ -185,7 +185,7 @@ describe("CORS Middleware", () => {
       headers: { Origin: "https://admin.com" },
     });
     expect(resPrivate.headers.get("Access-Control-Allow-Origin")).toBe(
-      "https://admin.com"
+      "https://admin.com",
     );
   });
 });

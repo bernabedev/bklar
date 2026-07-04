@@ -24,7 +24,7 @@ const toJSONSchemaOptions = {
 function createSchemaName(
   path: string,
   method: string,
-  suffix: string
+  suffix: string,
 ): string {
   const cleanPath = path
     .replace(/\/+/g, "_") // Replace slashes with underscores
@@ -39,7 +39,7 @@ function createSchemaName(
  * Extracts and formats parameters (Path/Query) from route schemas.
  */
 function processParameters(
-  schemas: any
+  schemas: any,
 ): (ParameterObject | ReferenceObject)[] {
   const parameters: (ParameterObject | ReferenceObject)[] = [];
 
@@ -78,7 +78,7 @@ function processParameters(
 
 export function generateOpenAPI(
   app: BklarInstance,
-  config: any
+  config: any,
 ): OpenAPIObject {
   const openApi: OpenAPIObject = {
     openapi: "3.1.0",
@@ -127,7 +127,7 @@ export function generateOpenAPI(
       const schemaName = createSchemaName(path, method, "Body");
       const jsonSchema = z.toJSONSchema(
         route.options.schemas.body,
-        toJSONSchemaOptions
+        toJSONSchemaOptions,
       ) as SchemaObject;
 
       // Register Component
@@ -156,7 +156,7 @@ export function generateOpenAPI(
         const schemaName = createSchemaName(path, method, `Res${code}`);
         const jsonSchema = z.toJSONSchema(
           schema,
-          toJSONSchemaOptions
+          toJSONSchemaOptions,
         ) as SchemaObject;
 
         // Register Component

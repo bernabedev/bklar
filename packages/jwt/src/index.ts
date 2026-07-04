@@ -30,7 +30,7 @@ const defaultGetToken = (ctx: InferContext<any>): string | undefined => {
 };
 
 export function jwt<T extends JWTPayload = JWTPayload>(
-  options: JWTOptions
+  options: JWTOptions,
 ): Middleware {
   const {
     secret,

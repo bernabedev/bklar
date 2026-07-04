@@ -58,8 +58,8 @@ export function compression(options: CompressionOptions = {}): Middleware {
       res instanceof Response
         ? res
         : (ctx as any)._res instanceof Response
-        ? (ctx as any)._res
-        : null;
+          ? (ctx as any)._res
+          : null;
 
     if (!response || !response.body) return res;
 

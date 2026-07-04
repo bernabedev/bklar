@@ -13,6 +13,6 @@ app.get("/", (ctx) => {
 
 app.listen(3000, (server) => {
   console.log(
-    `\nVisit http://${server.hostname}:${server.port} in your browser.`
+    `\nVisit http://${server.hostname}:${server.port} in your browser.`,
   );
 });

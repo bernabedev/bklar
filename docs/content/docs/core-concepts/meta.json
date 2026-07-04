@@ -8,6 +8,11 @@
     "middleware-priority",
     "request-ids",
     "body-limits",
-    "server-timing"
+    "server-timing",
+    "response-streaming",
+    "cache-headers",
+    "form-data",
+    "problem-json",
+    "dependency-injection"
   ]
 }

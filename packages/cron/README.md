@@ -44,7 +44,7 @@ app.use(
     run: () => {
       console.log("💓 App is alive at", new Date().toISOString());
     },
-  })
+  }),
 );
 
 // 2. Control the job via an endpoint
@@ -119,7 +119,7 @@ app.use(
       await performHeavyBackup();
       console.log("Backup finished.");
     },
-  })
+  }),
 );
 ```
 
@@ -135,7 +135,7 @@ app.use(
     name: "cleanup",
     pattern: Patterns.EVERY_DAY_AT_MIDNIGHT,
     run: () => console.log("Cleaning up temp files..."),
-  })
+  }),
 );
 ```
 
@@ -175,7 +175,7 @@ app.use(
       // Send to Sentry, Datadog, etc.
       myLogger.error("Cron job failed", err);
     },
-  })
+  }),
 );
 ```
 

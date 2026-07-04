@@ -99,7 +99,7 @@ export function upload(options: UploadOptions = {}): Middleware {
         if (value.size > maxSize) {
           return ctx.json(
             { message: `File '${value.name}' exceeds size limit` },
-            413
+            413,
           );
         }
 
@@ -116,7 +116,7 @@ export function upload(options: UploadOptions = {}): Middleware {
           if (!allowed) {
             return ctx.json(
               { message: `File type '${fileType}' is not allowed` },
-              415
+              415,
             );
           }
         }

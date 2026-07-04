@@ -17,7 +17,7 @@ describe("Logger System", () => {
         password: "secret123",
         user: { token: "abc", name: "john" },
       },
-      "login"
+      "login",
     );
 
     const parsed = JSON.parse(output);

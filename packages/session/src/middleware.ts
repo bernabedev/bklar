@@ -29,14 +29,26 @@ export function session(options: SessionOptions = {}): Middleware {
       } else {
         const newSid = generateSessionId();
         sessionData = {};
-        ctx.setCookie(cookieName, newSid, { maxAge, httpOnly, secure, sameSite, path });
+        ctx.setCookie(cookieName, newSid, {
+          maxAge,
+          httpOnly,
+          secure,
+          sameSite,
+          path,
+        });
         ctx.state.sessionId = newSid;
         await store.set(newSid, sessionData, maxAge);
       }
     } else {
       const newSid = generateSessionId();
       sessionData = {};
-      ctx.setCookie(cookieName, newSid, { maxAge, httpOnly, secure, sameSite, path });
+      ctx.setCookie(cookieName, newSid, {
+        maxAge,
+        httpOnly,
+        secure,
+        sameSite,
+        path,
+      });
       ctx.state.sessionId = newSid;
       await store.set(newSid, sessionData, maxAge);
     }

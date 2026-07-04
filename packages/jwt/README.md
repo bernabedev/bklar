@@ -60,7 +60,7 @@ app.get(
   },
   {
     middlewares: [authMiddleware],
-  }
+  },
 );
 
 app.listen(3000);
@@ -108,7 +108,7 @@ app.post(
       { sub: user.id, email: user.email, role: user.role },
       JWT_SECRET,
       "HS256",
-      { expiresIn: "1h" } // Token is valid for 1 hour
+      { expiresIn: "1h" }, // Token is valid for 1 hour
     );
 
     return ctx.json({ token });
@@ -120,7 +120,7 @@ app.post(
         password: z.string(),
       }),
     },
-  }
+  },
 );
 
 app.listen(3000);
@@ -153,7 +153,7 @@ app.get(
     // User is a guest, show public content
     return ctx.json({ content: "A post." });
   },
-  { middlewares: [optionalAuth] }
+  { middlewares: [optionalAuth] },
 );
 ```
 

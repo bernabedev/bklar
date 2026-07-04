@@ -26,7 +26,7 @@ describe("Upload Middleware", () => {
       },
       {
         middlewares: [upload({ dest: TEST_UPLOAD_DIR })],
-      }
+      },
     );
 
     const formData = new FormData();
@@ -120,7 +120,7 @@ describe("Upload Middleware", () => {
       },
       {
         middlewares: [upload()],
-      }
+      },
     );
 
     const formData = new FormData();

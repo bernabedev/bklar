@@ -20,14 +20,14 @@ describe("Static Middleware", () => {
     // Create a dummy text file
     await fs.writeFile(
       path.join(tempPublicDir, "index.html"),
-      "<h1>Hello World</h1>"
+      "<h1>Hello World</h1>",
     );
 
     // Create a subfolder file
     await fs.mkdir(path.join(tempPublicDir, "assets"), { recursive: true });
     await fs.writeFile(
       path.join(tempPublicDir, "assets/style.css"),
-      "body { color: red; }"
+      "body { color: red; }",
     );
 
     // Create a dotfile to test security

@@ -46,7 +46,7 @@ export function cors(options: CorsOptions = {}): Middleware {
   const config = {
     origin: options.origin ?? true,
     methods: toArray(options.methods ?? "GET,HEAD,PUT,PATCH,POST,DELETE").join(
-      ","
+      ",",
     ),
     allowedHeaders: toArray(options.allowedHeaders).join(","),
     exposedHeaders: toArray(options.exposedHeaders).join(","),
@@ -59,7 +59,7 @@ export function cors(options: CorsOptions = {}): Middleware {
     if (typeof config.origin === "string") return config.origin === origin;
     if (Array.isArray(config.origin)) {
       return config.origin.some((o) =>
-        typeof o === "string" ? o === origin : o.test(origin)
+        typeof o === "string" ? o === origin : o.test(origin),
       );
     }
     if (config.origin instanceof RegExp) {
@@ -99,7 +99,7 @@ export function cors(options: CorsOptions = {}): Middleware {
       }
 
       const requestedHeaders = ctx.req.headers.get(
-        "Access-Control-Request-Headers"
+        "Access-Control-Request-Headers",
       );
       if (requestedHeaders) {
         ctx.setHeader("Access-Control-Allow-Headers", requestedHeaders);

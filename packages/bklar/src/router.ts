@@ -7,7 +7,6 @@ export interface MatchResult {
   wsHandlers?: WSHandlers;
 }
 
-
 export interface RouteInfo {
   method: string;
   path: string;
@@ -19,10 +18,16 @@ export class Router {
   root: RadixNode = new RadixNode();
   private routes: RouteInfo[] = [];
 
-  add(method: string, path: string, middlewares: Middleware[], options: RouteOptions<any> = {}, wsHandlers?: WSHandlers) {
+  add(
+    method: string,
+    path: string,
+    middlewares: Middleware[],
+    options: RouteOptions<any> = {},
+    wsHandlers?: WSHandlers,
+  ) {
     const segments = path.split("/").filter(Boolean);
     this.routes.push({ method, path, segments, options });
-    
+
     let currentNode = this.root;
 
     for (const segment of segments) {
@@ -41,7 +46,7 @@ export class Router {
         }
         if (currentNode.paramNode.paramName !== paramName) {
           throw new Error(
-            `Parameter name collision at ${path}: ${currentNode.paramNode.paramName} vs ${paramName}`
+            `Parameter name collision at ${path}: ${currentNode.paramNode.paramName} vs ${paramName}`,
           );
         }
         currentNode = currentNode.paramNode;
@@ -55,11 +60,11 @@ export class Router {
 
     // Initialize array if not exists
     if (!currentNode.handlers[method]) {
-        currentNode.handlers[method] = [];
+      currentNode.handlers[method] = [];
     }
     // Store the stack
     currentNode.handlers[method] = middlewares;
-    
+
     if (wsHandlers) {
       currentNode.wsHandlers[method] = wsHandlers;
     }
@@ -83,12 +88,11 @@ export class Router {
     };
   }
 
-
   private _search(
     node: RadixNode,
     segments: string[],
     idx: number,
-    params: Record<string, string>
+    params: Record<string, string>,
   ): RadixNode | null {
     if (idx === segments.length) {
       return node;
@@ -98,7 +102,12 @@ export class Router {
 
     // 1. Static match
     if (node.children[segment]) {
-      const res = this._search(node.children[segment], segments, idx + 1, params);
+      const res = this._search(
+        node.children[segment],
+        segments,
+        idx + 1,
+        params,
+      );
       if (res) return res;
     }
 
