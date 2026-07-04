@@ -35,7 +35,8 @@
   },
   "scripts": {
     "build": "bunchee",
-    "prepublishOnly": "bun run build"
+    "prepublishOnly": "bun run build",
+    "test": "bun test"
   },
   "peerDependencies": {
     "bklar": "^2.0.0"

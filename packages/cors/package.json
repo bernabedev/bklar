@@ -2,7 +2,16 @@
   "name": "@bklarjs/cors",
   "version": "2.0.2",
   "description": "CORS middleware for the bklar framework.",
-  "main": "index.ts",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "keywords": [
     "bklar",
     "bun",
@@ -24,11 +33,18 @@
   "bugs": {
     "url": "https://github.com/bernabedev/bklar/issues"
   },
+  "scripts": {
+    "build": "bunchee",
+    "prepublishOnly": "bun run build",
+    "test": "bun test"
+  },
   "peerDependencies": {
     "bklar": ">=2.0.2"
   },
   "devDependencies": {
-    "bklar": "workspace:*"
+    "bklar": "workspace:*",
+    "bunchee": "^6.9.3",
+    "typescript": "^5.0.0"
   },
   "publishConfig": {
     "access": "public"

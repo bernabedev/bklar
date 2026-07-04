@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { Bklar } from "bklar";
-import { cors } from "../index";
+import { cors } from "../src/index";
 
 describe("CORS Middleware", () => {
   it("should allow all origins by default", async () => {
