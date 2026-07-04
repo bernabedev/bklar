@@ -19,9 +19,11 @@ export function generatePackageJson(options: TemplateOptions) {
   const pluginMap: Record<string, string> = {
     cors: "@bklarjs/cors",
     compression: "@bklarjs/compression",
+    csrf: "@bklarjs/csrf",
     helmet: "@bklarjs/helmet",
     jwt: "@bklarjs/jwt",
     logger: "@bklarjs/logger",
+    session: "@bklarjs/session",
     upload: "@bklarjs/upload",
     swagger: "@bklarjs/swagger",
     cron: "@bklarjs/cron",
@@ -34,6 +36,7 @@ export function generatePackageJson(options: TemplateOptions) {
   const pluginVersions: Record<string, string> = {
     "@bklarjs/cors": "^2.0.0",
     "@bklarjs/compression": "^1.0.0",
+    "@bklarjs/csrf": "^1.0.0",
     "@bklarjs/helmet": "^1.0.0",
     "@bklarjs/jwt": "^2.0.0",
     "@bklarjs/logger": "^1.0.0",
@@ -42,6 +45,7 @@ export function generatePackageJson(options: TemplateOptions) {
     "@bklarjs/cron": "^1.0.0",
     "@bklarjs/cache": "^1.0.0",
     "@bklarjs/rate-limit": "^2.0.0",
+    "@bklarjs/session": "^1.0.0",
     "@bklarjs/static": "^2.0.0",
   };
 
@@ -81,6 +85,10 @@ export function generateEntryFile(options: TemplateOptions): string {
     imports.push('import { cors } from "@bklarjs/cors";');
     middlewares.push("app.use(cors());");
   }
+  if (options.plugins.includes("csrf")) {
+    imports.push('import { csrf } from "@bklarjs/csrf";');
+    middlewares.push("app.use(csrf());");
+  }
   if (options.plugins.includes("compression")) {
     imports.push('import { compression } from "@bklarjs/compression";');
     middlewares.push("app.use(compression());");
@@ -92,6 +100,10 @@ export function generateEntryFile(options: TemplateOptions): string {
   if (options.plugins.includes("rate-limit")) {
     imports.push('import { rateLimit } from "@bklarjs/rate-limit";');
     middlewares.push("app.use(rateLimit());");
+  }
+  if (options.plugins.includes("session")) {
+    imports.push('import { session } from "@bklarjs/session";');
+    middlewares.push("app.use(session());");
   }
   if (options.plugins.includes("static")) {
     imports.push('import { staticFiles } from "@bklarjs/static";');

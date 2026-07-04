@@ -108,6 +108,8 @@ async function init() {
           { title: "Uploads", value: "upload" },
           { title: "Caching", value: "cache" },
           { title: "Cron Jobs", value: "cron" },
+          { title: "CSRF Protection", value: "csrf" },
+          { title: "Sessions", value: "session" },
         ],
         hint: "- Space to select. Return to submit",
       },
