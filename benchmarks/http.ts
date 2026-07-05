@@ -11,9 +11,27 @@ function getPort(base = 3000): number {
   return base + Math.floor(Math.random() * 1000);
 }
 
-function memUsageMB(): number {
-  const usage = process.memoryUsage.rss();
-  return Math.round((usage / 1024 / 1024) * 100) / 100;
+interface MemSnapshot {
+  rss: number;
+  heapUsed: number;
+}
+
+function memUsage(): MemSnapshot {
+  if (typeof Bun !== "undefined") Bun.gc(true);
+  const usage = process.memoryUsage();
+  return {
+    rss: Math.round((usage.rss / 1024 / 1024) * 100) / 100,
+    heapUsed: Math.round((usage.heapUsed / 1024 / 1024) * 100) / 100,
+  };
+}
+
+function memDelta(before: MemSnapshot, after: MemSnapshot): string {
+  return `rss=${after.rss}MB (+${(after.rss - before.rss).toFixed(2)}MB) heap=${after.heapUsed}MB (+${(after.heapUsed - before.heapUsed).toFixed(2)}MB)`;
+}
+
+function gcAndSleep(): Promise<void> {
+  if (typeof Bun !== "undefined") Bun.gc(true);
+  return Bun.sleep(100);
 }
 
 function percentile(sorted: number[], p: number): number {
@@ -43,7 +61,7 @@ async function runHttpBench(
   const latencies: number[] = [];
   let completed = 0;
 
-  const memBefore = memUsageMB();
+  const memBefore = memUsage();
   const start = performance.now();
 
   async function worker() {
@@ -76,11 +94,11 @@ async function runHttpBench(
   await Promise.all(workers);
 
   const elapsed = performance.now() - start;
-  const memAfter = memUsageMB();
+  const memAfter = memUsage();
   const rps = Math.round((iterations / elapsed) * 1000);
   const sorted = latencies.slice(0, iterations).sort((a, b) => a - b);
 
-  console.log(`  ${label.padEnd(32)} ${rps.toLocaleString().padStart(9)} req/s  p50=${percentile(sorted, 50).toFixed(2)}ms  p95=${percentile(sorted, 95).toFixed(2)}ms  p99=${percentile(sorted, 99).toFixed(2)}ms  mem=${memAfter}MB (+${(memAfter - memBefore).toFixed(2)}MB)`);
+  console.log(`  ${label.padEnd(32)} ${rps.toLocaleString().padStart(9)} req/s  p50=${percentile(sorted, 50).toFixed(2)}ms  p95=${percentile(sorted, 95).toFixed(2)}ms  p99=${percentile(sorted, 99).toFixed(2)}ms  ${memDelta(memBefore, memAfter)}`);
 
   return { label, rps, p50: percentile(sorted, 50), p95: percentile(sorted, 95), p99: percentile(sorted, 99), memBefore, memAfter };
 }
@@ -88,7 +106,7 @@ async function runHttpBench(
 // --- Framework helpers ---
 
 function createBklar() {
-  return Bklar({ logger: false });
+  return Bklar({ logger: false, requestId: { fast: true } });
 }
 
 function createHono() {
@@ -112,7 +130,7 @@ async function startServer(framework: string, app: any, port: number): Promise<S
 
 async function stopServer(srv: Server) {
   srv.stop(true);
-  await Bun.sleep(100);
+  await gcAndSleep();
 }
 
 // --- Benchmarks ---
@@ -304,7 +322,7 @@ async function benchWebSocket() {
 
   const ITERATIONS = 5_000;
   const latencies: number[] = [];
-  const memBefore = memUsageMB();
+  const memBefore = memUsage();
   const start = performance.now();
 
   let completed = 0;
@@ -339,11 +357,11 @@ async function benchWebSocket() {
   await Promise.all(workers);
 
   const elapsed = performance.now() - start;
-  const memAfter = memUsageMB();
+  const memAfter = memUsage();
   const rps = Math.round((ITERATIONS / elapsed) * 1000);
   const sorted = latencies.sort((a, b) => a - b);
 
-  console.log(`  ${"bklar websocket".padEnd(32)} ${rps.toLocaleString().padStart(9)} req/s  p50=${percentile(sorted, 50).toFixed(2)}ms  p95=${percentile(sorted, 95).toFixed(2)}ms  p99=${percentile(sorted, 99).toFixed(2)}ms  mem=${memAfter}MB (+${(memAfter - memBefore).toFixed(2)}MB)`);
+  console.log(`  ${"bklar websocket".padEnd(32)} ${rps.toLocaleString().padStart(9)} req/s  p50=${percentile(sorted, 50).toFixed(2)}ms  p95=${percentile(sorted, 95).toFixed(2)}ms  p99=${percentile(sorted, 99).toFixed(2)}ms  ${memDelta(memBefore, memAfter)}`);
 
   await stopServer(srv);
 }
@@ -404,7 +422,8 @@ async function runHttpBenchmarks() {
   console.log("\n🚀 Bklar HTTP Benchmark Suite (real server, keep-alive)");
   console.log(`   ${REQ_PER_TEST.toLocaleString()} requests per test, ${CONCURRENCY} concurrent connections`);
   console.log("=".repeat(55));
-  console.log(`   Baseline memory: ${memUsageMB()} MB RSS`);
+  const baseline = memUsage();
+  console.log(`   Baseline memory: rss=${baseline.rss}MB heap=${baseline.heapUsed}MB`);
   console.log("=".repeat(55));
 
   await benchPlainText();

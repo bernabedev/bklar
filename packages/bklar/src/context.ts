@@ -399,12 +399,14 @@ export class Context<T extends { query: any; params: any; body: any }> {
   }
 
   private _appendCookies(headers: Headers) {
+    if (this._setCookies.length === 0) return;
     for (const cookie of this._setCookies) {
       headers.append("Set-Cookie", cookie);
     }
   }
 
   private _mergeHeaders(headers: Headers) {
+    if ((this._headers as any).count === 0) return;
     this._headers.forEach((value, key) => {
       if (!headers.has(key)) {
         headers.set(key, value);

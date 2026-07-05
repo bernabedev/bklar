@@ -86,6 +86,8 @@ export interface BklarOptions {
   requestId?: {
     headerName?: string;
     generator?: () => string;
+    /** Use a fast counter-based ID generator instead of crypto.randomUUID() */
+    fast?: boolean;
   };
   hooks?: LifecycleHooks;
   errorFormat?: "basic" | "problemJson";

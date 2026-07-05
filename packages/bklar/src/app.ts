@@ -27,6 +27,7 @@ import {
 } from "./errors";
 import { defaultLogger } from "./utils/logger";
 import { defaultValidator, type ValidatorAdapter } from "./validator";
+import { getDefaultFastIdGen } from "./utils/fast-id";
 
 // Define the structure for route types
 export type RouteType<Method extends string, S extends Schemas, ReturnType> = {
@@ -129,11 +130,14 @@ export class BklarApp<Routes = {}> {
 
           if (!(res instanceof Response)) {
             if (typeof res === "object" || Array.isArray(res)) {
-              res = ctx.json(res);
+              res = new Response(JSON.stringify(res), {
+                headers: { "Content-Type": "application/json" },
+              });
             } else if (typeof res === "string") {
-              res = ctx.text(res);
+              res = new Response(res, {
+                headers: { "Content-Type": "text/plain;charset=UTF-8" },
+              });
             } else if (res === undefined) {
-              // Handler returned nothing and no _res set — likely an error
               return new Response("Internal Server Error", { status: 500 });
             }
           }
@@ -157,13 +161,14 @@ export class BklarApp<Routes = {}> {
           if (res instanceof ReadableStream) {
             res = ctx.stream(res);
           } else if (Symbol.asyncIterator in Object(res)) {
-            // Async generator — stream each yielded value as SSE
             res = ctx.sse();
             return res;
           } else if (typeof res === "object" || Array.isArray(res)) {
             res = ctx.json(res);
           } else if (typeof res === "string") {
-            res = ctx.text(res);
+            res = new Response(res, {
+              headers: { "Content-Type": "text/plain;charset=UTF-8" },
+            });
           } else if (res === undefined) {
             return new Response("Internal Server Error", { status: 500 });
           }
@@ -408,12 +413,14 @@ export class BklarApp<Routes = {}> {
     return res || new Response("Upgrade", { status: 101 });
   }
 
-  private _createContext(req: Request): Context<any> {
+  private _createContext(req: Request, url?: URL): Context<any> {
     const requestIdHeaderName =
       this.options.requestId?.headerName || "X-Request-Id";
     const existingId = req.headers.get(requestIdHeaderName.toLowerCase());
+    const reqIdConfig = this.options.requestId;
     const generator =
-      this.options.requestId?.generator || (() => crypto.randomUUID());
+      reqIdConfig?.generator ??
+      (reqIdConfig?.fast ? getDefaultFastIdGen() : () => crypto.randomUUID());
     const requestId = existingId || generator();
 
     const ctx = new Context<any>(
@@ -424,12 +431,20 @@ export class BklarApp<Routes = {}> {
       this.options.maxBodySize,
       requestIdHeaderName,
     );
-    ctx.query = Object.fromEntries(new URL(req.url).searchParams.entries());
+    ctx.query = url
+      ? url.search
+        ? Object.fromEntries(url.searchParams.entries())
+        : {}
+      : (() => {
+          const u = new URL(req.url);
+          return u.search ? Object.fromEntries(u.searchParams.entries()) : {};
+        })();
     ctx._errorFormat = this.options.errorFormat || "basic";
     return ctx;
   }
 
   private _getSortedMiddlewares(): Middleware[] {
+    if (this.globalMiddlewares.length === 0) return [];
     return [...this.globalMiddlewares]
       .sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0))
       .map((m) => m.fn);
@@ -446,7 +461,7 @@ export class BklarApp<Routes = {}> {
     this._activeRequests++;
 
     const url = new URL(req.url);
-    const ctx = this._createContext(req);
+    const ctx = this._createContext(req, url);
 
     const errorHandler = this.options.errorHandler || defaultErrorHandler;
 
@@ -480,14 +495,18 @@ export class BklarApp<Routes = {}> {
             }
 
             if (finalResponse) {
-              ctx._headers.forEach((value, key) => {
-                if (!finalResponse!.headers.has(key)) {
-                  finalResponse!.headers.set(key, value);
-                }
-              });
+              if ((ctx._headers as any).count > 0) {
+                ctx._headers.forEach((value, key) => {
+                  if (!finalResponse!.headers.has(key)) {
+                    finalResponse!.headers.set(key, value);
+                  }
+                });
+              }
 
-              for (const cookie of ctx._setCookies) {
-                finalResponse.headers.append("Set-Cookie", cookie);
+              if (ctx._setCookies.length > 0) {
+                for (const cookie of ctx._setCookies) {
+                  finalResponse.headers.append("Set-Cookie", cookie);
+                }
               }
 
               return finalResponse;
@@ -574,21 +593,46 @@ export class BklarApp<Routes = {}> {
 
         if (res instanceof Response) {
           // Merge persistent headers
-          ctx._headers.forEach((value, key) => {
-            if (!res.headers.has(key)) {
-              res.headers.set(key, value);
-            }
-          });
+          if ((ctx._headers as any).count > 0) {
+            ctx._headers.forEach((value, key) => {
+              if (!res.headers.has(key)) {
+                res.headers.set(key, value);
+              }
+            });
+          }
+
+          // Append request ID + server timings (already set by ctx helpers if used)
+          const reqIdHeader =
+            (ctx as any)._requestIdHeaderName || "X-Request-Id";
+          if ((ctx as any).requestId && !res.headers.has(reqIdHeader)) {
+            res.headers.set(reqIdHeader, (ctx as any).requestId);
+          }
+          if (
+            (ctx as any)._serverTimings?.length > 0 &&
+            !res.headers.has("Server-Timing")
+          ) {
+            const value = (ctx as any)._serverTimings
+              .map((t: any) => {
+                let entry = t.name;
+                if (t.description) entry += `;desc="${t.description}"`;
+                entry += `;dur=${Math.round(t.duration)}`;
+                return entry;
+              })
+              .join(", ");
+            res.headers.set("Server-Timing", value);
+          }
 
           // Append cookies
-          const existingCookies =
-            typeof res.headers.getSetCookie === "function"
-              ? res.headers.getSetCookie()
-              : [];
+          if (ctx._setCookies.length > 0) {
+            const existingCookies =
+              typeof res.headers.getSetCookie === "function"
+                ? res.headers.getSetCookie()
+                : [];
 
-          for (const cookie of ctx._setCookies) {
-            if (!existingCookies.includes(cookie)) {
-              res.headers.append("Set-Cookie", cookie);
+            for (const cookie of ctx._setCookies) {
+              if (!existingCookies.includes(cookie)) {
+                res.headers.append("Set-Cookie", cookie);
+              }
             }
           }
 
@@ -612,11 +656,15 @@ export class BklarApp<Routes = {}> {
             { status: 413, headers: { "Content-Type": "application/json" } },
           );
 
-          ctx._headers.forEach((value, key) => {
-            res.headers.set(key, value);
-          });
-          for (const cookie of ctx._setCookies) {
-            res.headers.append("Set-Cookie", cookie);
+          if ((ctx._headers as any).count > 0) {
+            ctx._headers.forEach((value, key) => {
+              res.headers.set(key, value);
+            });
+          }
+          if (ctx._setCookies.length > 0) {
+            for (const cookie of ctx._setCookies) {
+              res.headers.append("Set-Cookie", cookie);
+            }
           }
           if (this.hooks.onResponse) {
             await this.hooks.onResponse(ctx, res);
@@ -637,13 +685,17 @@ export class BklarApp<Routes = {}> {
         }
 
         // Merge persistent headers
-        ctx._headers.forEach((value, key) => {
-          res.headers.set(key, value);
-        });
+        if ((ctx._headers as any).count > 0) {
+          ctx._headers.forEach((value, key) => {
+            res.headers.set(key, value);
+          });
+        }
 
         // Append cookies
-        for (const cookie of ctx._setCookies) {
-          res.headers.append("Set-Cookie", cookie);
+        if (ctx._setCookies.length > 0) {
+          for (const cookie of ctx._setCookies) {
+            res.headers.append("Set-Cookie", cookie);
+          }
         }
 
         if (this.hooks.onResponse) {
@@ -771,19 +823,23 @@ export class BklarApp<Routes = {}> {
         drain: (ws) => ws.data._handlers.drain?.(ws),
       },
       fetch: async (req, srv) => {
-        const start = performance.now();
+        let start: number | undefined;
+        let ip: string | undefined;
 
-        const ip =
-          req.headers.get("x-forwarded-for")?.split(",")[0] ||
-          srv.requestIP(req)?.address;
-        if (ip) {
-          req.headers.set("X-Client-IP", ip);
+        if (loggingEnabled) {
+          start = performance.now();
+          ip =
+            req.headers.get("x-forwarded-for")?.split(",")[0] ||
+            srv.requestIP(req)?.address;
+          if (ip) {
+            req.headers.set("X-Client-IP", ip);
+          }
         }
 
         const res = await this.handle(req, srv);
 
         if (res && loggingEnabled) {
-          const duration = performance.now() - start;
+          const duration = performance.now() - (start as number);
           logger(req, duration, res.status, ip);
         }
 
